@@ -1,6 +1,6 @@
 # James Game
 
-A Godot 4.7 mobile strategy prototype played on an adjustable artillery grid.
+A polished Godot 4.7 local hot-seat strategy game played on an adjustable artillery grid.
 
 ## Current rules
 
@@ -21,8 +21,13 @@ A Godot 4.7 mobile strategy prototype played on an adjustable artillery grid.
 - A team loses immediately if its artillery is destroyed or every unit other than its artillery is destroyed. The opposing team wins.
 - Choose a grid size from 6×6 through 100×100, then press **Apply / New Map** to regenerate units, mountains, and trees.
 - Large-board coordinates continue after `Z` (`AA`, `AB`, and so on), reaching `CV100` on a 100×100 grid.
+- A private command handoff hides the battlefield between turns until the next player is ready.
+- Large battlefields support button or mouse-wheel zoom, drag panning, WASD panning, and one-tap **Fit** reset.
+- Sound cues reinforce selection, movement, firing, invalid orders, production, and victory; **Sound On/Off** makes all audio optional.
 
 Only the active team's units can be selected. Tap a movable unit to show its legal destinations, then tap a highlighted square. Artillery cannot fire on friendly units.
+
+The game uses a cohesive pixel-art command interface. The radar-dish sprite is the spyglass unit (`S`), the tank is the movable turret (`T`), the command building is the base (`B`), and the fixed gun emplacement is artillery (`A`).
 
 ## Requirements
 
@@ -45,4 +50,6 @@ Pushes to `main` build and deploy the web export through `.github/workflows/page
 - `.github/workflows/pages.yml`: GitHub Pages build and deployment workflow.
 - `scenes/main.tscn`: main board and interface scene.
 - `scripts/main.gd`: board generation, rendering, selection, and movement rules.
+- `assets/kenney/`: selected CC0 battlefield graphics, sound effects, and original license files.
+- `THIRD_PARTY_ASSETS.md`: asset provenance and license summary.
 - `docs/mobile-notes.md`: next steps for Android/iOS export setup.
