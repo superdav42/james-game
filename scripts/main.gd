@@ -143,11 +143,14 @@ func _draw() -> void:
 			draw_string(font, label_position, _cell_to_coordinate(cell), HORIZONTAL_ALIGNMENT_LEFT, -1.0, coordinate_font_size, Color("102818"))
 
 	for unit_id in units:
-		if _unit_team(unit_id) != active_team:
+		if not _is_unit_visible_to_active_team(unit_id):
 			continue
 		var center: Vector2 = _cell_center(units[unit_id])
 		var is_selected: bool = unit_id == selected_unit or unit_id == selected_artillery
+		var is_revealed_enemy: bool = _unit_team(unit_id) != active_team
 		var unit_radius := minf(23.0, cell_size * 0.38)
+		if is_revealed_enemy:
+			draw_circle(center, unit_radius + minf(4.0, cell_size * 0.1), Color("f4c95d"))
 		if is_selected:
 			draw_circle(center, unit_radius + minf(4.0, cell_size * 0.1), Color.WHITE)
 		draw_circle(center, unit_radius, TEAM_COLORS[_unit_team(unit_id)])
@@ -281,8 +284,9 @@ func _spyglass_moves(unit_id: String) -> Array[Vector2i]:
 	for row in range(grid_size):
 		for column in range(grid_size):
 			var cell := Vector2i(column, row)
-			var distance: int = maxi(absi(cell.x - start.x), absi(cell.y - start.y))
-			if distance > 0 and distance <= 3 and _unit_at(cell) == "":
+			var offset := cell - start
+			var distance_squared: int = offset.x * offset.x + offset.y * offset.y
+			if distance_squared > 0 and distance_squared <= 9 and _unit_at(cell) == "":
 				result.append(cell)
 	return result
 
@@ -291,7 +295,7 @@ func _turret_moves(unit_id: String) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var start: Vector2i = units[unit_id]
 	var frontier: Array[Vector2i] = [start]
-	var distances: Dictionary[Vector2i, int] = {start: 0}
+	var distances: Dictionary[Vector2i, float] = {start: 0.0}
 	var directions: Array[Vector2i] = [
 		Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
 		Vector2i(-1, 0), Vector2i(1, 0),
@@ -299,21 +303,50 @@ func _turret_moves(unit_id: String) -> Array[Vector2i]:
 	]
 
 	while not frontier.is_empty():
-		var current: Vector2i = frontier.pop_front()
-		var distance: int = distances[current]
-		if distance >= 4:
-			continue
+		var closest_index := 0
+		for index in range(1, frontier.size()):
+			if distances[frontier[index]] < distances[frontier[closest_index]]:
+				closest_index = index
+		var current: Vector2i = frontier.pop_at(closest_index)
+		var distance: float = distances[current]
 		for direction in directions:
 			var next_cell: Vector2i = current + direction
-			if not _is_inside_grid(next_cell) or next_cell in distances:
+			if not _is_inside_grid(next_cell):
 				continue
 			if next_cell in mountains or _unit_at(next_cell) != "":
 				continue
-			distances[next_cell] = distance + 1
-			frontier.append(next_cell)
-			result.append(next_cell)
+			var step_cost := sqrt(2.0) if direction.x != 0 and direction.y != 0 else 1.0
+			var next_distance: float = distance + step_cost
+			if next_distance > 4.0:
+				continue
+			if distances.has(next_cell) and distances[next_cell] <= next_distance:
+				continue
+			distances[next_cell] = next_distance
+			if next_cell not in frontier:
+				frontier.append(next_cell)
+			if next_cell not in result:
+				result.append(next_cell)
 
 	return result
+
+
+func _is_unit_visible_to_active_team(unit_id: String) -> bool:
+	if _unit_team(unit_id) == active_team:
+		return true
+
+	var target: Vector2i = units[unit_id]
+	var target_is_in_tree := target in trees
+	for observer_id in units:
+		if _unit_team(observer_id) != active_team or _unit_type(observer_id) != SPYGLASS:
+			continue
+		var observer: Vector2i = units[observer_id]
+		var offset := target - observer
+		if target_is_in_tree:
+			if maxi(absi(offset.x), absi(offset.y)) <= 1:
+				return true
+		elif offset.x * offset.x + offset.y * offset.y <= 9:
+			return true
+	return false
 
 
 func _get_turret_targets(unit_id: String) -> Array[String]:

@@ -64,7 +64,7 @@ offset_right = 660.0
 offset_bottom = 936.0
 theme_override_colors/font_color = Color(0.760784, 0.788235, 0.819608, 1)
 theme_override_font_sizes/font_size = 18
-text = "Enemy units are hidden. Artillery has unlimited board range.\nSelect a turret and enter a coordinate to fire within 4 squares."
+text = "Spyglasses reveal nearby enemies in a circular range.\nEnemies in trees are revealed only when a spyglass is adjacent."
 horizontal_alignment = 1
 autowrap_mode = 2
 
