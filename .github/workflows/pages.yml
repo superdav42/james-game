@@ -33,7 +33,9 @@ jobs:
           include-templates: true
 
       - name: Export web build
-        run: godot --headless --path . --export-release Web build/index.html
+        run: |
+          mkdir -p build
+          godot --headless --path . --export-release Web build/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
