@@ -4,30 +4,35 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 
 ## Current rules
 
-- Red and Blue each begin with one artillery (`A`), spyglass unit (`S`), turret (`T`), and base (`B`).
-- Each team sees its own units and enemies detected by its spyglass units.
-- Red moves first, then play alternates between Red and Blue.
-- Moving a unit, firing artillery, or firing a turret ends the active team's turn.
-- Artillery is stationary and has unlimited range across the current board. Select it, enter a coordinate, and press **Fire**.
-- A direct artillery hit removes an opposing unit; misses leave an impact marker.
-- The spyglass unit moves within a circular 3-space range and can cross or occupy mountains. Every square in range displays its coordinate, even when another unit occupies it, but only empty squares are legal destinations.
-- The turret moves within a circular 4-space range and must travel around mountains. Diagonal steps use their true longer distance.
-- Instead of moving, a turret can fire at a typed coordinate within 4 squares. It only damages an opposing spyglass unit.
-- Spyglass units and turrets can move horizontally, vertically, or diagonally.
-- Units cannot finish a move on another unit.
-- A spyglass reveals enemies within its 3-space movement radius. An enemy in a tree is concealed unless a spyglass is directly adjacent, including diagonally.
+- Red and Blue begin in opposing compact clusters with one stationary artillery cannon (`A`), Spyglass (`S`), Turret (`T`), headquarters (`B`), and one city (`C`) per ten board rows, rounded up.
+- Each city pays its owner `$100` when that commander begins a turn. The treasury and expected next-turn income remain visible above the board.
+- A turn has a **Movement** phase followed by a **Shooting** phase. Press **Begin Shooting** after movement, then **End Turn** after firing.
+- During Movement, every movable unit may move once. Movement uses a two-click order: select a unit to display destination arrows, then select an arrow-marked tile to confirm. A brisk tile-by-tile animation follows the selected route.
+- During Shooting, stationary artillery may fire once, every Mobile Flank may fire once, and each eligible direct-attack unit may attack once. Firing one unit does not prevent the others from firing.
+- Artillery has unlimited coordinate range. Its Civil War-style silver cannon recoils and flashes before the shot resolves.
+- A direct artillery or Mobile Flank hit removes an opposing unit except a Tank Destroyer; misses leave an impact marker.
+- The Spyglass moves within a circular 3-space range and may cross or occupy mountains. Every square in range displays its coordinate, including occupied squares, but only empty squares are legal destinations.
+- The Turret moves 4 and may fire within 4 squares at opposing Spyglass or Grenade Men units.
+- Grenade Men move 4 and destroy an adjacent Tank Destroyer.
+- Tanks move 3 and destroy an adjacent Turret or Grenade Men unit.
+- Motorcycles move 10, scout within 3 squares, display scouting coordinates, and cannot enter or cross mountains.
+- Mobile Flanks move 3 and fire at typed coordinates within 10 squares.
+- Tank Destroyers move 3 and destroy an adjacent Tank. Only Grenade Men can destroy a Tank Destroyer.
+- Movable units may travel horizontally, vertically, or diagonally. Ground units route around mountains, diagonal steps use their true longer distance, and no unit may finish on another unit.
+- Spyglass units and Motorcycles reveal enemies within 3 squares. An enemy in a tree remains concealed unless a scout is directly adjacent, including diagonally.
 - Trees do not block movement or firing.
-- A base can produce additional spyglass units or turrets in an adjacent open square. Production consumes the team's turn.
+- Select an HQ during Movement to buy one unit per turn in an adjacent open square. New units wait until the next turn to move or attack.
+- Shop prices are Spyglass `$50`, Turret `$50`, Grenade Men `$75`, Tank `$100`, Motorcycle `$150`, Mobile Flank `$300`, and Tank Destroyer `$300`.
 - A team loses immediately if its artillery is destroyed or every unit other than its artillery is destroyed. The opposing team wins.
 - Choose a grid size from 6×6 through 100×100, then press **Apply / New Map** to regenerate units, mountains, and trees.
 - Large-board coordinates continue after `Z` (`AA`, `AB`, and so on), reaching `CV100` on a 100×100 grid.
-- A five-second **Opponent's Turn** screen hides the battlefield after each action, followed by a private command handoff until the next player is ready.
+- A five-second **Opponent's Turn** screen hides the battlefield after **End Turn**, followed by a private command handoff until the next player is ready.
 - Large battlefields support button or mouse-wheel zoom, drag panning, WASD panning, and one-tap **Fit** reset.
 - Sound cues reinforce selection, movement, firing, invalid orders, production, and victory; **Sound On/Off** makes all audio optional.
 
-Only the active team's units can be selected. Tap a movable unit to show its legal destinations, then tap a highlighted square. Artillery cannot fire on friendly units.
+Only the active team's units can be selected. Artillery, Turrets, and Mobile Flanks cannot fire on friendly units.
 
-The game uses a cohesive pixel-art command interface. The radar-dish sprite is the spyglass unit (`S`), the tank is the movable turret (`T`), the command building is the base (`B`), and the fixed gun emplacement is artillery (`A`).
+The game uses a cohesive pixel-art command interface. Compact letter badges keep every role readable at a glance, including `A`, `S`, `T`, `C`, `F`, `K`, `M`, `D`, and `G`.
 
 ## Requirements
 

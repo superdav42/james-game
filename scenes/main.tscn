@@ -106,7 +106,7 @@ offset_right = 640.0
 offset_bottom = 158.0
 theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
 theme_override_font_sizes/font_size = 13
-text = "A  ARTILLERY     S  RADAR SCOUT     T  TURRET     B  HQ"
+text = "A CANNON   S SCOUT   T TURRET   C CITY   •   SELECT HQ TO SHOP"
 horizontal_alignment = 1
 
 [node name="StatusPanel" type="Panel" parent="Hud"]
@@ -193,20 +193,30 @@ tooltip_text = "Zoom in"
 [node name="InstructionsLabel" type="Label" parent="Hud"]
 offset_left = 76.0
 offset_top = 864.0
-offset_right = 644.0
+offset_right = 420.0
 offset_bottom = 910.0
 theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
 theme_override_font_sizes/font_size = 14
-text = "Tap a unit to select  •  Drag or WASD to pan when zoomed\nRadar scouts reveal nearby enemies; trees conceal at range"
-horizontal_alignment = 1
+text = "Select a unit, then an arrow tile\nDrag or WASD to pan when zoomed"
+horizontal_alignment = 0
 vertical_alignment = 1
 autowrap_mode = 2
+
+[node name="PhaseButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 430.0
+offset_top = 864.0
+offset_right = 644.0
+offset_bottom = 910.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 13
+text = "BEGIN SHOOTING"
+tooltip_text = "Advance to the next phase"
 
 [node name="ControlPanel" type="Panel" parent="Hud"]
 offset_left = 60.0
 offset_top = 918.0
 offset_right = 660.0
-offset_bottom = 1126.0
+offset_bottom = 1218.0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleTopPanel")
 
@@ -229,7 +239,7 @@ offset_bottom = 988.0
 mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 18
 text = "FIRE SALVO"
-tooltip_text = "Fire the selected artillery or turret"
+tooltip_text = "Fire the selected artillery, turret, or Mobile Flank"
 
 [node name="GridSizeLabel" type="Label" parent="Hud"]
 offset_left = 76.0
@@ -264,32 +274,82 @@ text = "GENERATE NEW BATTLEFIELD"
 
 [node name="MakeSpyglassButton" type="Button" parent="Hud" groups=["action_button"]]
 offset_left = 76.0
-offset_top = 1064.0
-offset_right = 348.0
-offset_bottom = 1112.0
+offset_top = 1058.0
+offset_right = 256.0
+offset_bottom = 1100.0
 mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 14
-text = "HQ: BUILD RADAR (S)"
+theme_override_font_sizes/font_size = 12
+text = "S  SPYGLASS  $50"
 tooltip_text = "Select your HQ first"
 
 [node name="MakeTurretButton" type="Button" parent="Hud" groups=["action_button"]]
-offset_left = 372.0
-offset_top = 1064.0
-offset_right = 644.0
-offset_bottom = 1112.0
+offset_left = 270.0
+offset_top = 1058.0
+offset_right = 450.0
+offset_bottom = 1100.0
 mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 14
-text = "HQ: BUILD TURRET (T)"
+theme_override_font_sizes/font_size = 12
+text = "T  TURRET  $50"
 tooltip_text = "Select your HQ first"
+
+[node name="MakeGrenadeButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 464.0
+offset_top = 1058.0
+offset_right = 644.0
+offset_bottom = 1100.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "G  GRENADES  $75"
+tooltip_text = "Move 4; destroys adjacent tank destroyers"
+
+[node name="MakeTankButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 76.0
+offset_top = 1108.0
+offset_right = 256.0
+offset_bottom = 1150.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "K  TANK  $100"
+tooltip_text = "Move 3; destroys adjacent turrets and grenade units"
+
+[node name="MakeMotorcycleButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 270.0
+offset_top = 1108.0
+offset_right = 450.0
+offset_bottom = 1150.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "M  MOTORCYCLE  $150"
+tooltip_text = "Move 10 and scout; cannot enter mountains"
+
+[node name="MakeMobileFlankButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 464.0
+offset_top = 1108.0
+offset_right = 644.0
+offset_bottom = 1150.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "F  MOBILE FLANK  $300"
+tooltip_text = "Move 3 or fire up to 10 squares"
+
+[node name="MakeTankDestroyerButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 76.0
+offset_top = 1158.0
+offset_right = 644.0
+offset_bottom = 1204.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "D  TANK DESTROYER  $300"
+tooltip_text = "Move 3; destroys adjacent tanks; only grenade units can destroy it"
 
 [node name="FooterLabel" type="Label" parent="Hud"]
 offset_left = 76.0
-offset_top = 1140.0
+offset_top = 1224.0
 offset_right = 644.0
-offset_bottom = 1184.0
+offset_bottom = 1260.0
 theme_override_colors/font_color = Color(0.419608, 0.47451, 0.568627, 1)
 theme_override_font_sizes/font_size = 12
-text = "CC0 ART + AUDIO BY KENNEY  •  ZOOM FOR LARGE BATTLEFIELDS"
+text = "CITIES PAY $100/TURN  •  CC0 ART + AUDIO BY KENNEY"
 horizontal_alignment = 1
 vertical_alignment = 1
 
