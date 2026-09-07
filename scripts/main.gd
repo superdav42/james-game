@@ -1,1732 +1,455 @@
 extends Node2D
 
-const BOARD_SIZE := 600.0
-const BOARD_TOP := 250.0
-const MAX_ZOOM := 10.0
-const PAN_SPEED := 520.0
-const OPPONENT_TURN_DELAY := 5.0
-const CANNON_ANIMATION_DURATION := 0.7
-const CANNON_CINEMATIC_DURATION := 3.0
-const MOVE_STEP_DURATION := 0.16
-const CITY_INCOME := 100
+const STARTING_MANA := 20.0
+const MANA_PER_SECOND := 2.0
+const SUMMON_COST := 5.0
+const ENEMY_MAX_HP := 100.0
+const ENEMY_SPEED := 72.0
+const BASE_HEALTH := 10
+const ATTACK_RANGE := 235.0
+const ATTACK_INTERVAL := 1.0
 
-const MOVEMENT_PHASE := "movement"
-const SHOOTING_PHASE := "shooting"
-
-const ARTILLERY := "artillery"
-const SPYGLASS := "spyglass"
-const TURRET := "turret"
-const BASE := "base"
-const CITY := "city"
-const MOBILE_FLANK := "mobileflank"
-const TANK := "tank"
-const MOTORCYCLE := "motorcycle"
-const TANK_DESTROYER := "tankdestroyer"
-const GRENADE := "grenade"
-const MVC := "mvc"
-const MVB := "mvb"
-const RED := "red"
-const BLUE := "blue"
-
-const BACKGROUND_COLOR := Color("0c1120")
-const PANEL_COLOR := Color("151d30")
-const TEXT_COLOR := Color("e7edf5")
-const MUTED_TEXT_COLOR := Color("aab6c8")
-const GOLD_COLOR := Color("f4c95d")
-const ERROR_COLOR := Color("ff8b7d")
-const TEAM_COLORS := {
-	RED: Color("f05252"),
-	BLUE: Color("35a7ff"),
+const ELECTRIC := "Electric Mage"
+const ICE := "Ice Mage"
+const FIRE := "Fire Mage"
+const ARCHER := "Archer"
+const REAPER := "The Reaper"
+const DEFENDER_TYPES := [ELECTRIC, ICE, FIRE, ARCHER, REAPER]
+const DEFENDER_COLORS := {
+	ELECTRIC: Color("7dd3fc"),
+	ICE: Color("a5f3fc"),
+	FIRE: Color("fb923c"),
+	ARCHER: Color("bef264"),
+	REAPER: Color("c4b5fd"),
 }
-const UNIT_LETTERS := {
-	ARTILLERY: "A",
-	SPYGLASS: "S",
-	TURRET: "T",
-	BASE: "B",
-	CITY: "C",
-	MOBILE_FLANK: "F",
-	TANK: "K",
-	MOTORCYCLE: "M",
-	TANK_DESTROYER: "D",
-	GRENADE: "G",
-	MVC: "C",
-	MVB: "B",
-}
-const UNIT_COSTS := {
-	SPYGLASS: 50,
-	TURRET: 50,
-	GRENADE: 75,
-	TANK: 100,
-	MOTORCYCLE: 150,
-	MOBILE_FLANK: 300,
-	TANK_DESTROYER: 300,
-	MVC: 400,
-	MVB: 400,
+const DEFENDER_LETTERS := {
+	ELECTRIC: "E",
+	ICE: "I",
+	FIRE: "F",
+	ARCHER: "A",
+	REAPER: "R",
 }
 
-const GROUND_TEXTURES := [
-	preload("res://assets/kenney/tiny_battle/ground.png"),
-	preload("res://assets/kenney/tiny_battle/ground_detail.png"),
-	preload("res://assets/kenney/tiny_battle/ground_flowers.png"),
-]
-const MOUNTAIN_TEXTURE := preload("res://assets/kenney/tiny_battle/mountain.png")
-const TREE_TEXTURE := preload("res://assets/kenney/tiny_battle/trees.png")
-const UNIT_TEXTURES := {
-	RED: {
-		ARTILLERY: preload("res://assets/kenney/tiny_battle/red_artillery.png"),
-		SPYGLASS: preload("res://assets/kenney/tiny_battle/red_motorcycle.png"),
-		TURRET: preload("res://assets/kenney/tiny_battle/red_turret.png"),
-		BASE: preload("res://assets/kenney/tiny_battle/red_base.png"),
-		CITY: preload("res://assets/kenney/tiny_battle/red_city.png"),
-		MOBILE_FLANK: preload("res://assets/kenney/tiny_battle/red_mobile_flank.png"),
-		TANK: preload("res://assets/kenney/tiny_battle/red_tank.png"),
-		MOTORCYCLE: preload("res://assets/kenney/tiny_battle/red_motorcycle.png"),
-		TANK_DESTROYER: preload("res://assets/kenney/tiny_battle/red_tank_destroyer.png"),
-		GRENADE: preload("res://assets/kenney/tiny_battle/red_grenade.png"),
-		MVC: preload("res://assets/kenney/tiny_battle/red_mobile_flank.png"),
-		MVB: preload("res://assets/kenney/tiny_battle/red_mobile_flank.png"),
-	},
-	BLUE: {
-		ARTILLERY: preload("res://assets/kenney/tiny_battle/blue_artillery.png"),
-		SPYGLASS: preload("res://assets/kenney/tiny_battle/blue_motorcycle.png"),
-		TURRET: preload("res://assets/kenney/tiny_battle/blue_turret.png"),
-		BASE: preload("res://assets/kenney/tiny_battle/blue_base.png"),
-		CITY: preload("res://assets/kenney/tiny_battle/blue_city.png"),
-		MOBILE_FLANK: preload("res://assets/kenney/tiny_battle/blue_mobile_flank.png"),
-		TANK: preload("res://assets/kenney/tiny_battle/blue_tank.png"),
-		MOTORCYCLE: preload("res://assets/kenney/tiny_battle/blue_motorcycle.png"),
-		TANK_DESTROYER: preload("res://assets/kenney/tiny_battle/blue_tank_destroyer.png"),
-		GRENADE: preload("res://assets/kenney/tiny_battle/blue_grenade.png"),
-		MVC: preload("res://assets/kenney/tiny_battle/blue_mobile_flank.png"),
-		MVB: preload("res://assets/kenney/tiny_battle/blue_mobile_flank.png"),
-	},
-}
+var path_points := PackedVector2Array([
+	Vector2(360, 160), Vector2(90, 160),
+	Vector2(90, 375), Vector2(630, 375),
+	Vector2(630, 615), Vector2(90, 615),
+	Vector2(90, 855), Vector2(630, 855),
+	Vector2(630, 1045), Vector2(360, 1075),
+])
+var summon_slots := PackedVector2Array([
+	Vector2(170, 265), Vector2(265, 265), Vector2(360, 265), Vector2(455, 265), Vector2(550, 265),
+	Vector2(170, 490), Vector2(265, 490), Vector2(360, 490), Vector2(455, 490), Vector2(550, 490),
+	Vector2(170, 735), Vector2(265, 735), Vector2(360, 735), Vector2(455, 735), Vector2(550, 735),
+	Vector2(170, 955), Vector2(265, 955), Vector2(360, 955), Vector2(455, 955), Vector2(550, 955),
+])
 
-const CLICK_SOUND := preload("res://assets/kenney/audio/click.ogg")
-const SELECT_SOUND := preload("res://assets/kenney/audio/select.ogg")
-const CONFIRM_SOUND := preload("res://assets/kenney/audio/confirm.ogg")
-const ERROR_SOUND := preload("res://assets/kenney/audio/error.ogg")
-const MOVE_SOUND := preload("res://assets/kenney/audio/move.ogg")
-const IMPACT_SOUND := preload("res://assets/kenney/audio/impact.ogg")
-const VICTORY_SOUND := preload("res://assets/kenney/audio/victory.ogg")
-
-var units: Dictionary[String, Vector2i] = {}
-var mountains: Array[Vector2i] = []
-var trees: Array[Vector2i] = []
-var impact_cells: Array[Vector2i] = []
-var grid_size := 10
-var cell_size := 60.0
-var board_origin := Vector2(60.0, BOARD_TOP)
-var board_pan := Vector2.ZERO
-var zoom_level := 1.0
-var active_team := RED
-var selected_unit := ""
-var selected_artillery := "red_artillery"
-var valid_moves: Array[Vector2i] = []
-var spyglass_range_cells: Array[Vector2i] = []
-var valid_targets: Array[String] = []
-var gold := {RED: 0, BLUE: 0}
-var unit_serial := 1
-var turn_number := 1
-var turn_phase := MOVEMENT_PHASE
-var moved_units: Dictionary[String, bool] = {}
-var fired_units: Dictionary[String, bool] = {}
-var produced_bases: Dictionary[String, bool] = {}
+var mana := STARTING_MANA
+var base_health := BASE_HEALTH
+var kills := 0
+var elapsed_time := 0.0
+var spawn_countdown := 1.0
+var path_length := 0.0
+var defenders: Array[Dictionary] = []
+var enemies: Array[Dictionary] = []
+var effects: Array[Dictionary] = []
 var game_over := false
-var handoff_pending := true
-var pending_handoff_message := ""
-var transition_active := false
-var transition_countdown := 0.0
-var displayed_countdown_second := 0
-var sound_enabled := true
-var drag_active := false
-var drag_moved := false
-var drag_start := Vector2.ZERO
-var drag_pan_start := Vector2.ZERO
-var impact_flash_time := 0.0
-var action_in_progress := false
-var cannon_animation_unit := ""
-var cannon_animation_time := 0.0
-var cannon_direction := Vector2.RIGHT
-var movement_animation_unit := ""
-var movement_animation_from := Vector2i.ZERO
-var movement_animation_to := Vector2i.ZERO
-var movement_animation_progress := 0.0
-var cannon_cinematic_time := 0.0
 
-@onready var background: ColorRect = $Background
-@onready var turn_label: Label = $Hud/TurnLabel
-@onready var economy_label: Label = $Hud/SubtitleLabel
+@onready var mana_label: Label = $Hud/ManaLabel
+@onready var base_label: Label = $Hud/BaseLabel
+@onready var kills_label: Label = $Hud/KillsLabel
 @onready var status_label: Label = $Hud/StatusLabel
-@onready var phase_button: Button = $Hud/PhaseButton
-@onready var coordinate_input: LineEdit = $Hud/CoordinateInput
-@onready var fire_button: Button = $Hud/FireButton
-@onready var grid_size_input: SpinBox = $Hud/GridSizeInput
-@onready var reset_button: Button = $Hud/ResetButton
-@onready var make_spyglass_button: Button = $Hud/MakeSpyglassButton
-@onready var make_turret_button: Button = $Hud/MakeTurretButton
-@onready var make_tank_button: Button = $Hud/MakeTankButton
-@onready var make_mobile_flank_button: Button = $Hud/MakeMobileFlankButton
-@onready var make_motorcycle_button: Button = $Hud/MakeMotorcycleButton
-@onready var make_tank_destroyer_button: Button = $Hud/MakeTankDestroyerButton
-@onready var make_grenade_button: Button = $Hud/MakeGrenadeButton
-@onready var make_mvc_button: Button = $Hud/MakeMvcButton
-@onready var make_mvb_button: Button = $Hud/MakeMvbButton
-@onready var zoom_label: Label = $Hud/ZoomLabel
-@onready var zoom_out_button: Button = $Hud/ZoomOutButton
-@onready var zoom_in_button: Button = $Hud/ZoomInButton
-@onready var fit_button: Button = $Hud/FitButton
-@onready var sound_button: Button = $Hud/SoundButton
-@onready var handoff_overlay: ColorRect = $Hud/HandoffOverlay
-@onready var handoff_security_label: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/SecurityLabel
-@onready var handoff_title: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/HandoffTitle
-@onready var handoff_message: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/HandoffMessage
-@onready var begin_turn_button: Button = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/BeginTurnButton
-@onready var cannon_cinematic_overlay: ColorRect = $Hud/CannonCinematicOverlay
-@onready var cannon_cinematic_image: TextureRect = $Hud/CannonCinematicOverlay/CannonImage
-@onready var cannon_cinematic_flash: ColorRect = $Hud/CannonCinematicOverlay/Flash
-@onready var cannon_cinematic_countdown: Label = $Hud/CannonCinematicOverlay/CountdownLabel
-@onready var sfx_player: AudioStreamPlayer = $SfxPlayer
-@onready var jingle_player: AudioStreamPlayer = $JinglePlayer
+@onready var summon_button: Button = $Hud/SummonButton
+@onready var merge_button: Button = $Hud/MergeButton
+@onready var restart_button: Button = $Hud/RestartButton
+@onready var game_over_panel: Panel = $Hud/GameOverPanel
+@onready var game_over_label: Label = $Hud/GameOverPanel/GameOverLabel
 
 
 func _ready() -> void:
 	randomize()
-	coordinate_input.text_submitted.connect(_on_coordinate_submitted)
-	fire_button.pressed.connect(_fire_at_entered_coordinate)
-	reset_button.pressed.connect(_apply_grid_size)
-	make_spyglass_button.pressed.connect(_produce_unit.bind(SPYGLASS))
-	make_turret_button.pressed.connect(_produce_unit.bind(TURRET))
-	make_tank_button.pressed.connect(_produce_unit.bind(TANK))
-	make_mobile_flank_button.pressed.connect(_produce_unit.bind(MOBILE_FLANK))
-	make_motorcycle_button.pressed.connect(_produce_unit.bind(MOTORCYCLE))
-	make_tank_destroyer_button.pressed.connect(_produce_unit.bind(TANK_DESTROYER))
-	make_grenade_button.pressed.connect(_produce_unit.bind(GRENADE))
-	make_mvc_button.pressed.connect(_produce_unit.bind(MVC))
-	make_mvb_button.pressed.connect(_produce_unit.bind(MVB))
-	zoom_out_button.pressed.connect(_change_zoom.bind(0.5))
-	zoom_in_button.pressed.connect(_change_zoom.bind(2.0))
-	fit_button.pressed.connect(_reset_zoom)
-	sound_button.pressed.connect(_toggle_sound)
-	begin_turn_button.pressed.connect(_begin_turn)
-	phase_button.pressed.connect(_advance_phase)
-	get_viewport().size_changed.connect(_layout_hud)
-	_apply_visual_theme()
-	_layout_hud()
-	grid_size_input.value = grid_size
-	_create_new_board()
+	for index in range(path_points.size() - 1):
+		path_length += path_points[index].distance_to(path_points[index + 1])
+	summon_button.pressed.connect(_summon_defender)
+	merge_button.pressed.connect(_merge_matching_towers)
+	restart_button.pressed.connect(_restart_game)
+	_update_hud()
+	queue_redraw()
 
 
 func _process(delta: float) -> void:
-	if impact_flash_time > 0.0:
-		impact_flash_time = maxf(0.0, impact_flash_time - delta)
-		queue_redraw()
-	if cannon_animation_time > 0.0:
-		cannon_animation_time = maxf(0.0, cannon_animation_time - delta)
-		queue_redraw()
-	if cannon_cinematic_time > 0.0:
-		cannon_cinematic_time = maxf(0.0, cannon_cinematic_time - delta)
-		var cinematic_progress := 1.0 - cannon_cinematic_time / CANNON_CINEMATIC_DURATION
-		cannon_cinematic_image.scale = Vector2.ONE * (1.0 + cinematic_progress * 0.035)
-		cannon_cinematic_image.rotation = sin(cinematic_progress * TAU * 7.0) * (1.0 - cinematic_progress) * 0.006
-		cannon_cinematic_flash.color.a = maxf(0.0, 0.72 - cinematic_progress * 4.5)
-		cannon_cinematic_countdown.text = "SHOT IN FLIGHT · %.1f" % cannon_cinematic_time
-	if transition_active:
-		transition_countdown = maxf(0.0, transition_countdown - delta)
-		var countdown_second := ceili(transition_countdown)
-		if countdown_second != displayed_countdown_second:
-			displayed_countdown_second = countdown_second
-			_update_transition_message()
-		if transition_countdown <= 0.0:
-			transition_active = false
-			_show_handoff(pending_handoff_message)
-
-	if handoff_pending or game_over or zoom_level <= 1.0 or coordinate_input.has_focus():
-		return
-	var direction := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	if direction != Vector2.ZERO:
-		board_pan -= direction * PAN_SPEED * delta
-		_clamp_board_pan()
-		queue_redraw()
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if handoff_pending or game_over or action_in_progress:
+	if game_over:
 		return
 
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed and _board_rect().has_point(event.position):
-			_change_zoom(1.2, event.position)
-			get_viewport().set_input_as_handled()
-			return
-		if event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed and _board_rect().has_point(event.position):
-			_change_zoom(1.0 / 1.2, event.position)
-			get_viewport().set_input_as_handled()
-			return
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.pressed and _board_rect().has_point(event.position):
-				_begin_board_drag(event.position)
-			elif not event.pressed and drag_active:
-				_finish_board_drag(event.position)
-			get_viewport().set_input_as_handled()
-			return
+	elapsed_time += delta
+	mana = minf(99.0, mana + MANA_PER_SECOND * delta)
+	spawn_countdown -= delta
+	if spawn_countdown <= 0.0:
+		_spawn_enemy()
+		spawn_countdown = maxf(0.65, 1.75 - elapsed_time * 0.008)
 
-	if event is InputEventMouseMotion and drag_active:
-		_update_board_drag(event.position)
-		get_viewport().set_input_as_handled()
+	_update_enemies(delta)
+	_update_defenders(delta)
+	_update_effects(delta)
+	_update_hud()
+	queue_redraw()
+
+
+func _summon_defender() -> void:
+	if game_over:
+		return
+	if mana < SUMMON_COST:
+		_set_status("You need 5 mana to summon.", Color("fca5a5"))
+		return
+	var open_tile := _find_open_tile()
+	if open_tile < 0:
+		_set_status("All defender spaces are full!", Color("fde68a"))
 		return
 
-	if event is InputEventScreenTouch:
-		if event.pressed and _board_rect().has_point(event.position):
-			_begin_board_drag(event.position)
-		elif not event.pressed and drag_active:
-			_finish_board_drag(event.position)
-		get_viewport().set_input_as_handled()
-		return
+	mana -= SUMMON_COST
+	var defender_type: String = DEFENDER_TYPES.pick_random()
+	defenders.append({
+		"type": defender_type,
+		"tile": open_tile,
+		"position": summon_slots[open_tile],
+		"level": 1,
+		"cooldown": randf_range(0.1, 0.55),
+	})
+	_set_status("Summoned %s!" % defender_type, DEFENDER_COLORS[defender_type])
+	_update_hud()
+	queue_redraw()
 
-	if event is InputEventScreenDrag and drag_active:
-		_update_board_drag(event.position)
-		get_viewport().set_input_as_handled()
+
+func _find_open_tile() -> int:
+	for tile_index in range(summon_slots.size()):
+		var occupied := false
+		for defender in defenders:
+			if defender.tile == tile_index:
+				occupied = true
+				break
+		if not occupied:
+			return tile_index
+	return -1
+
+
+func _merge_matching_towers() -> void:
+	if game_over:
+		return
+	for first_index in range(defenders.size()):
+		for second_index in range(first_index + 1, defenders.size()):
+			var first := defenders[first_index]
+			var second := defenders[second_index]
+			if first.type == second.type and first.level == second.level:
+				first.level += 1
+				first.cooldown = 0.1
+				defenders.remove_at(second_index)
+				_set_status("Merged two %s towers into level %d!" % [first.type, first.level], DEFENDER_COLORS[first.type])
+				_update_hud()
+				queue_redraw()
+				return
+	_set_status("You need two matching towers of the same level.", Color("fde68a"))
+
+
+func _spawn_enemy() -> void:
+	var speed_bonus := minf(38.0, elapsed_time * 0.22)
+	enemies.append({
+		"progress": 0.0,
+		"position": path_points[0],
+		"hp": ENEMY_MAX_HP,
+		"speed": ENEMY_SPEED + speed_bonus,
+		"slow_remaining": 0.0,
+		"burn_remaining": 0.0,
+		"burn_tick": 0.0,
+	})
+
+
+func _update_enemies(delta: float) -> void:
+	var escaped: Array[int] = []
+	for index in range(enemies.size()):
+		var enemy := enemies[index]
+		if enemy.slow_remaining > 0.0:
+			enemy.slow_remaining = maxf(0.0, enemy.slow_remaining - delta)
+		if enemy.burn_remaining > 0.0:
+			enemy.burn_remaining = maxf(0.0, enemy.burn_remaining - delta)
+			enemy.burn_tick -= delta
+			if enemy.burn_tick <= 0.0:
+				enemy.hp -= 5.0
+				enemy.burn_tick = 0.5
+				effects.append({"kind": "burn", "position": enemy.position, "ttl": 0.3})
+		var speed_multiplier := 0.48 if enemy.slow_remaining > 0.0 else 1.0
+		enemy.progress += enemy.speed * speed_multiplier * delta
+		enemy.position = _point_on_path(enemy.progress)
+		if enemy.progress >= path_length:
+			escaped.append(index)
+
+	for index in range(escaped.size() - 1, -1, -1):
+		enemies.remove_at(escaped[index])
+		base_health -= 1
+		_set_status("An enemy reached the crystal!", Color("fca5a5"))
+	if base_health <= 0:
+		_end_game()
+	_remove_defeated_enemies()
+
+
+func _update_defenders(delta: float) -> void:
+	for defender in defenders:
+		defender.cooldown -= delta
+		if defender.cooldown > 0.0:
+			continue
+		var target_index := _find_target(defender.position)
+		if target_index < 0:
+			continue
+		defender.cooldown = ATTACK_INTERVAL / (1.0 + 0.12 * float(defender.level - 1))
+		_attack(defender, target_index)
+	_remove_defeated_enemies()
+
+
+func _find_target(origin: Vector2) -> int:
+	var result := -1
+	var furthest_progress := -1.0
+	for index in range(enemies.size()):
+		var enemy := enemies[index]
+		if enemy.hp > 0.0 and origin.distance_to(enemy.position) <= ATTACK_RANGE and enemy.progress > furthest_progress:
+			result = index
+			furthest_progress = enemy.progress
+	return result
+
+
+func _attack(defender: Dictionary, target_index: int) -> void:
+	if target_index >= enemies.size():
+		return
+	var defender_type: String = defender.type
+	var base_damage := 25.0 if defender_type == ARCHER else 20.0
+	var damage: float = base_damage * (1.0 + 0.75 * float(defender.level - 1))
+	var target := enemies[target_index]
+	if defender_type == REAPER and randf() < 0.05:
+		target.hp = 0.0
+		_set_status("The Reaper harvested a soul in one strike!", DEFENDER_COLORS[REAPER])
+	else:
+		target.hp -= damage
+	effects.append({
+		"kind": defender_type,
+		"from": defender.position,
+		"to": target.position,
+		"ttl": 0.18,
+	})
+
+	if defender_type == ELECTRIC:
+		_chain_lightning(target_index)
+	elif defender_type == ICE:
+		target.slow_remaining = 2.5
+	elif defender_type == FIRE:
+		target.burn_remaining = 3.0
+		target.burn_tick = 0.5
+
+
+func _chain_lightning(first_index: int) -> void:
+	var previous_index := first_index
+	var hit_indices: Array[int] = [first_index]
+	for _jump in range(2):
+		var next_index := -1
+		var nearest_distance := 145.0
+		for index in range(enemies.size()):
+			if index in hit_indices or enemies[index].hp <= 0.0:
+				continue
+			var distance: float = enemies[previous_index].position.distance_to(enemies[index].position)
+			if distance < nearest_distance:
+				nearest_distance = distance
+				next_index = index
+		if next_index < 0:
+			break
+		enemies[next_index].hp -= 20.0
+		effects.append({
+			"kind": ELECTRIC,
+			"from": enemies[previous_index].position,
+			"to": enemies[next_index].position,
+			"ttl": 0.18,
+		})
+		hit_indices.append(next_index)
+		previous_index = next_index
+
+
+func _remove_defeated_enemies() -> void:
+	for index in range(enemies.size() - 1, -1, -1):
+		if enemies[index].hp <= 0.0:
+			effects.append({"kind": "defeat", "position": enemies[index].position, "ttl": 0.35})
+			enemies.remove_at(index)
+			kills += 1
+
+
+func _update_effects(delta: float) -> void:
+	for index in range(effects.size() - 1, -1, -1):
+		effects[index].ttl -= delta
+		if effects[index].ttl <= 0.0:
+			effects.remove_at(index)
+
+
+func _point_on_path(progress: float) -> Vector2:
+	var remaining := clampf(progress, 0.0, path_length)
+	for index in range(path_points.size() - 1):
+		var start := path_points[index]
+		var finish := path_points[index + 1]
+		var segment_length := start.distance_to(finish)
+		if remaining <= segment_length:
+			return start.lerp(finish, remaining / segment_length)
+		remaining -= segment_length
+	return path_points[-1]
+
+
+func _restart_game() -> void:
+	mana = STARTING_MANA
+	base_health = BASE_HEALTH
+	kills = 0
+	elapsed_time = 0.0
+	spawn_countdown = 1.0
+	defenders.clear()
+	enemies.clear()
+	effects.clear()
+	game_over = false
+	game_over_panel.visible = false
+	summon_button.visible = true
+	merge_button.visible = true
+	status_label.text = "Summon defenders before the horde arrives!"
+	status_label.modulate = Color.WHITE
+	_update_hud()
+	queue_redraw()
+
+
+func _end_game() -> void:
+	game_over = true
+	base_health = 0
+	summon_button.visible = false
+	merge_button.visible = false
+	game_over_panel.visible = true
+	game_over_label.text = "THE CRYSTAL FELL\n\nYou defeated %d enemies" % kills
+	_update_hud()
+
+
+func _set_status(message: String, color: Color) -> void:
+	status_label.text = message
+	status_label.modulate = color
+
+
+func _update_hud() -> void:
+	mana_label.text = "MANA  %d / 99   +2/sec" % floori(mana)
+	base_label.text = "CRYSTAL  %d / %d" % [base_health, BASE_HEALTH]
+	kills_label.text = "DEFEATED  %d" % kills
+	summon_button.text = "SUMMON  •  5 MANA"
+	summon_button.disabled = mana < SUMMON_COST or _find_open_tile() < 0
+	merge_button.disabled = defenders.size() < 2
 
 
 func _draw() -> void:
-	var board_rect := _board_rect()
-	draw_rect(Rect2(board_rect.position + Vector2(7.0, 9.0), board_rect.size), Color(0.0, 0.0, 0.0, 0.32), true)
-	draw_rect(board_rect, Color("75b85a"), true)
-
-	var visible_bounds := _visible_cell_bounds()
-	for row in range(visible_bounds.position.y, visible_bounds.end.y):
-		for column in range(visible_bounds.position.x, visible_bounds.end.x):
-			var cell := Vector2i(column, row)
-			var rect := _cell_rect(cell)
-			var pattern := absi(column * 17 + row * 31) % 19
-			var ground_index := 2 if pattern == 0 else (1 if pattern < 5 else 0)
-			draw_texture_rect(GROUND_TEXTURES[ground_index], rect, false)
-			if (row + column) % 2 == 1:
-				draw_rect(rect, Color(0.05, 0.12, 0.04, 0.07), true)
-			if cell in valid_moves:
-				var highlight_inset := minf(5.0, rect.size.x * 0.1)
-				draw_rect(rect.grow(-highlight_inset), Color(0.35, 0.95, 0.55, 0.42), true)
-				draw_rect(rect.grow(-highlight_inset), Color("a8ffb8"), false, maxf(1.0, rect.size.x * 0.045))
-			if rect.size.x >= 12.0:
-				draw_rect(rect, Color(0.07, 0.13, 0.08, 0.34), false, minf(1.5, rect.size.x * 0.05))
-
-	for tree in trees:
-		if _is_cell_visible(tree):
-			_draw_cell_texture(TREE_TEXTURE, tree, 0.92)
-
-	for mountain in mountains:
-		if _is_cell_visible(mountain):
-			_draw_cell_texture(MOUNTAIN_TEXTURE, mountain, 0.88)
-
-	var font := ThemeDB.fallback_font
-	for impact_cell in impact_cells:
-		if _is_cell_visible(impact_cell):
-			_draw_impact(impact_cell)
-
-	for unit_id in units:
-		if not _is_unit_visible_to_active_team(unit_id) or not _is_cell_visible(units[unit_id]):
-			continue
-		_draw_unit(unit_id, font)
-
-	if selected_unit != "" and turn_phase == SHOOTING_PHASE:
-		_draw_target_markers(font)
-	if selected_unit != "" and _unit_type(selected_unit) in [SPYGLASS, MOTORCYCLE] and _effective_cell_size() >= 24.0:
-		_draw_spyglass_coordinates(font)
-	if selected_unit != "" and turn_phase == MOVEMENT_PHASE:
-		_draw_movement_arrows()
-
-	# Mask overflow from partially visible edge cells before drawing the crisp frame.
-	var viewport_size := get_viewport_rect().size
-	draw_rect(Rect2(Vector2.ZERO, Vector2(viewport_size.x, board_origin.y)), BACKGROUND_COLOR, true)
-	draw_rect(Rect2(Vector2(0.0, board_origin.y + BOARD_SIZE), Vector2(viewport_size.x, maxf(0.0, viewport_size.y - board_origin.y - BOARD_SIZE))), BACKGROUND_COLOR, true)
-	draw_rect(Rect2(Vector2(0.0, board_origin.y), Vector2(board_origin.x, BOARD_SIZE)), BACKGROUND_COLOR, true)
-	draw_rect(Rect2(Vector2(board_origin.x + BOARD_SIZE, board_origin.y), Vector2(maxf(0.0, viewport_size.x - board_origin.x - BOARD_SIZE), BOARD_SIZE)), BACKGROUND_COLOR, true)
-	draw_rect(board_rect, Color("30496a"), false, 4.0)
+	_draw_background()
+	_draw_path()
+	_draw_tower_tiles()
+	_draw_crystal()
+	for defender in defenders:
+		_draw_defender(defender)
+	for enemy in enemies:
+		_draw_enemy(enemy)
+	for effect in effects:
+		_draw_effect(effect)
 
 
-func _draw_cell_texture(texture: Texture2D, cell: Vector2i, scale: float) -> void:
-	var rect := _cell_rect(cell)
-	var sprite_size := rect.size * scale
-	var sprite_rect := Rect2(rect.get_center() - sprite_size * 0.5, sprite_size)
-	draw_texture_rect(texture, sprite_rect, false)
+func _draw_background() -> void:
+	draw_rect(Rect2(0, 0, 720, 1280), Color("07151f"), true)
+	for row in range(7):
+		for column in range(5):
+			var center := Vector2(72 + column * 145 + (row % 2) * 28, 220 + row * 135)
+			draw_circle(center, 2.0, Color(0.28, 0.55, 0.52, 0.2))
+	draw_rect(Rect2(0, 150, 720, 930), Color("0b2530"), true)
 
 
-func _draw_unit(unit_id: String, font: Font) -> void:
-	var cell: Vector2i = units[unit_id]
-	var rect := _cell_rect(cell)
-	var center := rect.get_center()
-	if unit_id == movement_animation_unit:
-		center = _cell_rect(movement_animation_from).get_center().lerp(_cell_rect(movement_animation_to).get_center(), movement_animation_progress)
-	var team := _unit_team(unit_id)
-	var unit_type := _unit_type(unit_id)
-	if unit_id == cannon_animation_unit and cannon_animation_time > 0.0:
-		var animation_progress := 1.0 - cannon_animation_time / CANNON_ANIMATION_DURATION
-		center -= cannon_direction * sin(animation_progress * PI) * rect.size.x * 0.13
-	var is_selected := unit_id == selected_unit
-	var is_armed := turn_phase == SHOOTING_PHASE and unit_id == selected_artillery and not fired_units.has(unit_id)
-	var is_revealed_enemy := team != active_team
-	var ring_radius := rect.size.x * 0.43
-	if is_revealed_enemy:
-		draw_circle(center, ring_radius, GOLD_COLOR, false, maxf(2.0, rect.size.x * 0.07))
-	if is_selected:
-		draw_circle(center, ring_radius, Color.WHITE, false, maxf(2.0, rect.size.x * 0.08))
-	elif is_armed:
-		draw_circle(center, ring_radius, Color("8fe7ff"), false, maxf(1.5, rect.size.x * 0.055))
+func _draw_path() -> void:
+	draw_polyline(path_points, Color(0.0, 0.0, 0.0, 0.35), 76.0, true)
+	draw_polyline(path_points, Color("244653"), 62.0, true)
+	draw_polyline(path_points, Color("315b65"), 3.0, true)
+	for point in path_points:
+		draw_circle(point, 31.0, Color("244653"))
 
-	var shadow_size := rect.size * 0.58
-	_draw_unit_shadow(center + Vector2(0.0, rect.size.y * 0.22), shadow_size.x * 0.5, shadow_size.y * 0.18, Color(0.0, 0.0, 0.0, 0.34))
-	if unit_type == ARTILLERY:
-		_draw_civil_war_cannon(center, rect.size.x, team)
+
+func _draw_tower_tiles() -> void:
+	var occupied_tiles: Array[int] = []
+	for defender in defenders:
+		occupied_tiles.append(defender.tile)
+	for tile_index in range(summon_slots.size()):
+		var position := summon_slots[tile_index]
+		var fill := Color(0.04, 0.15, 0.19, 0.72) if tile_index not in occupied_tiles else Color(0.06, 0.22, 0.25, 0.7)
+		draw_rect(Rect2(position - Vector2(38, 38), Vector2(76, 76)), fill, true)
+		draw_rect(Rect2(position - Vector2(38, 38), Vector2(76, 76)), Color(0.24, 0.55, 0.57, 0.7), false, 2.0)
+
+
+func _draw_crystal() -> void:
+	var center: Vector2 = path_points[-1]
+	draw_circle(center, 46.0, Color(0.15, 0.9, 0.83, 0.12))
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(0, -36), center + Vector2(25, -5),
+		center + Vector2(16, 31), center + Vector2(-16, 31),
+		center + Vector2(-25, -5),
+	]), Color("5eead4"))
+	draw_polyline(PackedVector2Array([center + Vector2(0, -36), center + Vector2(25, -5), center + Vector2(16, 31)]), Color("ccfbf1"), 3.0)
+
+
+func _draw_defender(defender: Dictionary) -> void:
+	var position: Vector2 = defender.position
+	var defender_type: String = defender.type
+	var color: Color = DEFENDER_COLORS[defender_type]
+	draw_circle(position + Vector2(0, 7), 31.0, Color(0.0, 0.0, 0.0, 0.35))
+	draw_circle(position, 30.0, Color("102e3b"))
+	draw_circle(position, 28.0, color.darkened(0.35))
+	draw_circle(position, 25.0, color, false, 3.0)
+	draw_string(ThemeDB.fallback_font, position + Vector2(-18, 11), DEFENDER_LETTERS[defender_type], HORIZONTAL_ALIGNMENT_CENTER, 36.0, 30, Color.WHITE)
+	if defender.level > 1:
+		var badge_position := position + Vector2(27, -27)
+		draw_circle(badge_position, 13.0, Color("f8fafc"))
+		draw_string(ThemeDB.fallback_font, badge_position + Vector2(-10, 6), str(defender.level), HORIZONTAL_ALIGNMENT_CENTER, 20.0, 16, Color("172033"))
+
+
+func _draw_enemy(enemy: Dictionary) -> void:
+	var position: Vector2 = enemy.position
+	var body_color := Color("93a4aa")
+	if enemy.slow_remaining > 0.0:
+		body_color = Color("67e8f9")
+	elif enemy.burn_remaining > 0.0:
+		body_color = Color("fb923c")
+	draw_circle(position + Vector2(0, 5), 22.0, Color(0.0, 0.0, 0.0, 0.4))
+	draw_circle(position, 21.0, Color("13252b"))
+	draw_circle(position, 17.0, body_color)
+	draw_line(position + Vector2(-7, -4), position + Vector2(-2, 0), Color("07151f"), 3.0)
+	draw_line(position + Vector2(7, -4), position + Vector2(2, 0), Color("07151f"), 3.0)
+	var hp_ratio: float = clampf(enemy.hp / ENEMY_MAX_HP, 0.0, 1.0)
+	draw_rect(Rect2(position + Vector2(-25, -32), Vector2(50, 6)), Color("3f1d25"), true)
+	draw_rect(Rect2(position + Vector2(-25, -32), Vector2(50 * hp_ratio, 6)), Color("fb7185"), true)
+
+
+func _draw_effect(effect: Dictionary) -> void:
+	var kind: String = effect.kind
+	if kind == "defeat":
+		draw_circle(effect.position, 36.0 * effect.ttl / 0.35, Color(0.98, 0.72, 0.35, 0.6), false, 5.0)
+	elif kind == "burn":
+		draw_circle(effect.position, 25.0, Color(1.0, 0.35, 0.08, 0.55), false, 5.0)
+	elif kind == ELECTRIC:
+		draw_line(effect.from, effect.to, Color("e0f2fe"), 7.0)
+		draw_line(effect.from, effect.to, DEFENDER_COLORS[ELECTRIC], 3.0)
+	elif kind == ICE:
+		draw_line(effect.from, effect.to, DEFENDER_COLORS[ICE], 5.0)
+	elif kind == FIRE:
+		draw_line(effect.from, effect.to, DEFENDER_COLORS[FIRE], 6.0)
+	elif kind == REAPER:
+		var midpoint: Vector2 = effect.from.lerp(effect.to, 0.65)
+		draw_line(effect.from, effect.to, DEFENDER_COLORS[REAPER], 3.0)
+		draw_arc(midpoint, 13.0, -1.4, 1.4, 12, Color("f5f3ff"), 4.0)
 	else:
-		var sprite_center := center
-		var sprite_scale := 0.8
-		if unit_type == MOTORCYCLE:
-			_draw_motorcycle(center, rect.size.x, team)
-			sprite_center += Vector2(0.0, -rect.size.y * 0.12)
-			sprite_scale = 0.58
-		elif unit_type == SPYGLASS:
-			sprite_scale = 0.68
-		var team_textures: Dictionary = UNIT_TEXTURES[team]
-		var texture: Texture2D = team_textures[unit_type]
-		var sprite_size := rect.size * sprite_scale
-		if unit_id == movement_animation_unit:
-			sprite_size.y *= 1.0 + sin(movement_animation_progress * PI * 2.0) * 0.06
-		draw_texture_rect(texture, Rect2(sprite_center - sprite_size * 0.5, sprite_size), false)
-		if unit_type == SPYGLASS:
-			_draw_handheld_spyglass(center, rect.size.x, team)
-		elif unit_type in [MVC, MVB]:
-			_draw_builder_emblem(center, rect.size.x, unit_type)
-
-	if rect.size.x >= 34.0:
-		var badge_radius := clampf(rect.size.x * 0.13, 6.0, 11.0)
-		var badge_center := center + Vector2(rect.size.x * 0.5 - badge_radius - 3.0, -rect.size.y * 0.5 + badge_radius + 3.0)
-		draw_circle(badge_center, badge_radius, Color("111827"))
-		draw_string(font, badge_center + Vector2(-badge_radius, badge_radius * 0.52), UNIT_LETTERS[unit_type], HORIZONTAL_ALIGNMENT_CENTER, badge_radius * 2.0, roundi(badge_radius * 1.35), Color.WHITE)
+		draw_line(effect.from, effect.to, DEFENDER_COLORS[ARCHER], 3.0)
 
 
-func _draw_movement_arrows() -> void:
-	var source_center := _cell_rect(units[selected_unit]).get_center()
-	for destination in valid_moves:
-		var rect := _cell_rect(destination)
-		if not rect.intersects(_board_rect()):
-			continue
-		var direction := (rect.get_center() - source_center).normalized()
-		var perpendicular := Vector2(-direction.y, direction.x)
-		var arrow_center := rect.get_center()
-		var arrow_size := clampf(rect.size.x * 0.2, 3.0, 10.0)
-		var tip := arrow_center + direction * arrow_size
-		var base := arrow_center - direction * arrow_size * 0.65
-		draw_line(base, tip, Color.WHITE, maxf(1.5, rect.size.x * 0.045))
-		draw_line(tip, tip - direction * arrow_size * 0.65 + perpendicular * arrow_size * 0.55, Color.WHITE, maxf(1.5, rect.size.x * 0.045))
-		draw_line(tip, tip - direction * arrow_size * 0.65 - perpendicular * arrow_size * 0.55, Color.WHITE, maxf(1.5, rect.size.x * 0.045))
-
-
-func _draw_target_markers(font: Font) -> void:
-	for target_id in valid_targets:
-		if not units.has(target_id) or not _is_cell_visible(units[target_id]):
-			continue
-		var rect := _cell_rect(units[target_id]).grow(-maxf(3.0, _effective_cell_size() * 0.08))
-		draw_rect(rect, Color("ffcf5c"), false, maxf(2.0, _effective_cell_size() * 0.055))
-		if rect.size.x >= 38.0:
-			var font_size := clampi(roundi(rect.size.x * 0.16), 8, 12)
-			draw_string(font, rect.position + Vector2(2.0, rect.size.y - 3.0), "TARGET", HORIZONTAL_ALIGNMENT_LEFT, -1.0, font_size, Color("fff1b8"))
-
-
-func _draw_civil_war_cannon(center: Vector2, size: float, team: String) -> void:
-	var direction := cannon_direction if cannon_animation_unit != "" else Vector2(0.92, -0.38).normalized()
-	var perpendicular := Vector2(-direction.y, direction.x)
-	var wheel_offset := perpendicular * size * 0.18
-	var wheel_radius := size * 0.17
-	for wheel_center in [center - wheel_offset, center + wheel_offset]:
-		draw_circle(wheel_center, wheel_radius, Color("4b2e20"))
-		draw_circle(wheel_center, wheel_radius * 0.72, Color("b0793f"))
-		draw_circle(wheel_center, wheel_radius * 0.18, Color("30241d"))
-		for spoke_index in range(8):
-			var spoke_direction := Vector2.from_angle(TAU * float(spoke_index) / 8.0)
-			draw_line(wheel_center, wheel_center + spoke_direction * wheel_radius * 0.65, Color("5b3b27"), maxf(1.0, size * 0.025))
-	var carriage_color: Color = TEAM_COLORS[team].darkened(0.18)
-	draw_line(center - direction * size * 0.2, center + direction * size * 0.18, carriage_color, maxf(4.0, size * 0.15))
-	var barrel_start := center - direction * size * 0.06
-	var barrel_end := center + direction * size * 0.43
-	draw_line(barrel_start, barrel_end, Color("313641"), maxf(4.0, size * 0.12))
-	draw_line(barrel_start, barrel_end, Color("707987"), maxf(1.5, size * 0.035))
-	draw_circle(barrel_end, maxf(2.5, size * 0.075), Color("252932"))
-	if cannon_animation_unit != "" and cannon_animation_time > CANNON_ANIMATION_DURATION * 0.55:
-		_draw_muzzle_flash(barrel_end + direction * size * 0.08, direction, size)
-
-
-func _draw_muzzle_flash(center: Vector2, direction: Vector2, size: float) -> void:
-	var perpendicular := Vector2(-direction.y, direction.x)
-	var points := PackedVector2Array([
-		center + direction * size * 0.24,
-		center + perpendicular * size * 0.1,
-		center - direction * size * 0.05,
-		center - perpendicular * size * 0.1,
-	])
-	draw_colored_polygon(points, Color("ffd45f"))
-	draw_circle(center, size * 0.075, Color("fff4b0"))
-
-
-func _draw_motorcycle(center: Vector2, size: float, team: String) -> void:
-	var wheel_y := center.y + size * 0.24
-	var wheel_radius := size * 0.145
-	var rear_wheel := Vector2(center.x - size * 0.25, wheel_y)
-	var front_wheel := Vector2(center.x + size * 0.27, wheel_y)
-	for wheel_center in [rear_wheel, front_wheel]:
-		draw_circle(wheel_center, wheel_radius, Color("161a22"))
-		draw_circle(wheel_center, wheel_radius * 0.68, Color("697386"), false, maxf(1.5, size * 0.035))
-		draw_circle(wheel_center, wheel_radius * 0.16, Color("d5d9e0"))
-		for spoke_index in range(6):
-			var spoke_direction := Vector2.from_angle(TAU * float(spoke_index) / 6.0)
-			draw_line(wheel_center, wheel_center + spoke_direction * wheel_radius * 0.58, Color("697386"), maxf(1.0, size * 0.018))
-	var frame_color: Color = TEAM_COLORS[team].lightened(0.08)
-	var engine_center := center + Vector2(0.0, size * 0.09)
-	draw_line(rear_wheel, engine_center, frame_color, maxf(2.0, size * 0.055))
-	draw_line(engine_center, front_wheel, frame_color, maxf(2.0, size * 0.055))
-	draw_line(rear_wheel, center + Vector2(-size * 0.04, -size * 0.08), frame_color, maxf(2.0, size * 0.05))
-	draw_line(center + Vector2(-size * 0.04, -size * 0.08), front_wheel, frame_color, maxf(2.0, size * 0.05))
-	draw_rect(Rect2(engine_center - Vector2(size * 0.09, size * 0.065), Vector2(size * 0.18, size * 0.13)), Color("353c48"), true)
-	draw_line(center + Vector2(-size * 0.16, -size * 0.11), center + Vector2(size * 0.02, -size * 0.11), Color("242933"), maxf(3.0, size * 0.075))
-	var handle_base := front_wheel + Vector2(-size * 0.03, -size * 0.27)
-	var handle_end := handle_base + Vector2(size * 0.13, -size * 0.07)
-	draw_line(front_wheel, handle_base, Color("596273"), maxf(1.5, size * 0.035))
-	draw_line(handle_base, handle_end, Color("596273"), maxf(1.5, size * 0.035))
-
-
-func _draw_handheld_spyglass(center: Vector2, size: float, team: String) -> void:
-	var eye_position := center + Vector2(size * 0.08, -size * 0.18)
-	var lens_position := center + Vector2(size * 0.35, -size * 0.31)
-	var direction := (lens_position - eye_position).normalized()
-	var perpendicular := Vector2(-direction.y, direction.x)
-	draw_line(center + Vector2(size * 0.02, size * 0.02), eye_position + direction * size * 0.08, TEAM_COLORS[team].lightened(0.18), maxf(2.0, size * 0.065))
-	draw_line(eye_position, lens_position, Color("b9812d"), maxf(3.0, size * 0.09))
-	draw_line(eye_position + direction * size * 0.05, lens_position - direction * size * 0.05, Color("e4b84f"), maxf(1.0, size * 0.028))
-	draw_line(lens_position - perpendicular * size * 0.075, lens_position + perpendicular * size * 0.075, Color("f2c65d"), maxf(2.0, size * 0.045))
-	draw_circle(lens_position, maxf(1.5, size * 0.035), Color("8fe7ff"))
-
-
-func _draw_builder_emblem(center: Vector2, size: float, unit_type: String) -> void:
-	var sign_rect := Rect2(center + Vector2(-size * 0.17, -size * 0.33), Vector2(size * 0.34, size * 0.3))
-	draw_rect(sign_rect, Color("172033"), true)
-	draw_rect(sign_rect, GOLD_COLOR, false, maxf(1.5, size * 0.035))
-	var letter := "C" if unit_type == MVC else "B"
-	draw_string(ThemeDB.fallback_font, sign_rect.position + Vector2(0.0, sign_rect.size.y * 0.78), letter, HORIZONTAL_ALIGNMENT_CENTER, sign_rect.size.x, roundi(size * 0.24), Color.WHITE)
-
-
-func _draw_unit_shadow(center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:
-	var points := PackedVector2Array()
-	for index in range(20):
-		var angle := TAU * float(index) / 20.0
-		points.append(center + Vector2(cos(angle) * radius_x, sin(angle) * radius_y))
-	draw_colored_polygon(points, color)
-
-
-func _draw_impact(cell: Vector2i) -> void:
-	var rect := _cell_rect(cell)
-	var center := rect.get_center()
-	var pulse := 1.0 + impact_flash_time * 0.6
-	var radius := minf(rect.size.x * 0.34 * pulse, 24.0)
-	var width := maxf(2.0, rect.size.x * 0.07)
-	draw_circle(center, radius, Color(1.0, 0.42, 0.08, 0.9), false, width)
-	draw_line(center + Vector2(-radius * 0.7, -radius * 0.7), center + Vector2(radius * 0.7, radius * 0.7), Color("611d12"), width)
-	draw_line(center + Vector2(radius * 0.7, -radius * 0.7), center + Vector2(-radius * 0.7, radius * 0.7), Color("611d12"), width)
-
-
-func _draw_spyglass_coordinates(font: Font) -> void:
-	for cell in spyglass_range_cells:
-		if not _is_cell_visible(cell):
-			continue
-		var rect := _cell_rect(cell)
-		var coordinate := _cell_to_coordinate(cell)
-		var coordinate_font_size := clampi(roundi(rect.size.x * 0.2), 8, 13)
-		var label_size := font.get_string_size(coordinate, HORIZONTAL_ALIGNMENT_LEFT, -1.0, coordinate_font_size)
-		var label_rect := Rect2(rect.position + Vector2(2.0, 2.0), label_size + Vector2(6.0, 4.0))
-		draw_rect(label_rect, Color(0.03, 0.07, 0.05, 0.78), true)
-		draw_string(font, label_rect.position + Vector2(3.0, coordinate_font_size + 1.0), coordinate, HORIZONTAL_ALIGNMENT_LEFT, -1.0, coordinate_font_size, Color("eaffee"))
-
-
-func _apply_grid_size() -> void:
-	if action_in_progress or handoff_pending:
-		return
-	grid_size = int(grid_size_input.value)
-	cell_size = BOARD_SIZE / float(grid_size)
-	_reset_zoom()
-	_create_new_board()
-
-
-func _create_new_board() -> void:
-	var cells: Array[Vector2i] = []
-	for row in range(grid_size):
-		for column in range(grid_size):
-			cells.append(Vector2i(column, row))
-	cells.shuffle()
-
-	units.clear()
-	var red_anchor := Vector2i(randi_range(0, maxi(1, grid_size / 4)), randi_range(0, grid_size - 1))
-	var blue_anchor := Vector2i(grid_size - 1 - red_anchor.x, grid_size - 1 - red_anchor.y)
-	var city_count := ceili(float(grid_size) / 10.0)
-	var red_base_cell := _take_cluster_cell(red_anchor, cells)
-	var blue_base_cell := _take_cluster_cell(blue_anchor, cells)
-	units["%s_base" % RED] = red_base_cell
-	units["%s_base" % BLUE] = blue_base_cell
-	var base_cells: Array[Vector2i] = [red_base_cell, blue_base_cell]
-	_spawn_team_cluster(RED, red_anchor, base_cells, city_count, cells)
-	_spawn_team_cluster(BLUE, blue_anchor, base_cells, city_count, cells)
-	cells.shuffle()
-	var mountain_count := mini(500, maxi(5, roundi(grid_size * grid_size * 0.14)))
-	mountains = _take_terrain_clusters(mountain_count, cells)
-	var tree_count := mini(400, maxi(4, roundi(grid_size * grid_size * 0.1)))
-	trees = _take_terrain_clusters(tree_count, cells)
-
-	impact_cells.clear()
-	active_team = RED
-	selected_unit = ""
-	selected_artillery = "red_artillery"
-	valid_moves.clear()
-	spyglass_range_cells.clear()
-	valid_targets.clear()
-	gold = {RED: 0, BLUE: 0}
-	unit_serial = 1
-	turn_number = 1
-	turn_phase = MOVEMENT_PHASE
-	moved_units.clear()
-	fired_units.clear()
-	produced_bases.clear()
-	game_over = false
-	transition_active = false
-	coordinate_input.clear()
-	coordinate_input.editable = true
-	fire_button.disabled = false
-	make_spyglass_button.disabled = false
-	make_turret_button.disabled = false
-	make_tank_button.disabled = false
-	make_mobile_flank_button.disabled = false
-	make_motorcycle_button.disabled = false
-	make_tank_destroyer_button.disabled = false
-	make_grenade_button.disabled = false
-	make_mvc_button.disabled = false
-	make_mvb_button.disabled = false
-	turn_label.modulate = Color.WHITE
-	_update_phase_controls()
-	_set_status("Movement phase · Select a movable unit, then select an arrow-marked destination.")
-	_update_turn_label()
-	_update_economy_label()
-	_show_handoff("New battlefield ready. Red deploys first.")
-	queue_redraw()
-
-
-func _spawn_team_cluster(team: String, anchor: Vector2i, base_cells: Array[Vector2i], city_count: int, available_cells: Array[Vector2i]) -> void:
-	units["%s_artillery" % team] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
-	units["%s_spyglass" % team] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
-	units["%s_turret" % team] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
-	for city_index in range(city_count):
-		units["%s_city_%d" % [team, city_index + 1]] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
-
-
-func _take_cluster_cell(anchor: Vector2i, available_cells: Array[Vector2i]) -> Vector2i:
-	var best_index := 0
-	var best_distance := 1 << 30
-	for index in range(available_cells.size()):
-		var offset := available_cells[index] - anchor
-		var distance := offset.x * offset.x + offset.y * offset.y
-		if distance < best_distance:
-			best_distance = distance
-			best_index = index
-	return available_cells.pop_at(best_index)
-
-
-func _take_cluster_cell_outside_bases(anchor: Vector2i, base_cells: Array[Vector2i], available_cells: Array[Vector2i]) -> Vector2i:
-	var best_index := -1
-	var best_distance := 1 << 30
-	for index in range(available_cells.size()):
-		var candidate: Vector2i = available_cells[index]
-		var inside_base_perimeter := false
-		for base_cell in base_cells:
-			var base_offset := candidate - base_cell
-			if maxi(absi(base_offset.x), absi(base_offset.y)) <= 1:
-				inside_base_perimeter = true
-				break
-		if inside_base_perimeter:
-			continue
-		var anchor_offset := candidate - anchor
-		var distance := anchor_offset.x * anchor_offset.x + anchor_offset.y * anchor_offset.y
-		if distance < best_distance:
-			best_distance = distance
-			best_index = index
-	if best_index >= 0:
-		return available_cells.pop_at(best_index)
-	return _take_cluster_cell(anchor, available_cells)
-
-
-func _take_terrain_clusters(requested_count: int, available_cells: Array[Vector2i]) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	var blocked_cells: Dictionary[Vector2i, bool] = {}
-	var available_lookup: Dictionary[Vector2i, bool] = {}
-	for cell in available_cells:
-		available_lookup[cell] = true
-	while result.size() < requested_count:
-		var seed_candidates: Array[Vector2i] = []
-		for cell in available_cells:
-			if available_lookup.has(cell) and not blocked_cells.has(cell):
-				seed_candidates.append(cell)
-		if seed_candidates.is_empty():
-			break
-		var seed: Vector2i = seed_candidates.pick_random()
-		available_lookup.erase(seed)
-		var cluster: Array[Vector2i] = [seed]
-		var remaining := requested_count - result.size()
-		var desired_cluster_size := mini(remaining, randi_range(3, 8))
-		while cluster.size() < desired_cluster_size:
-			var growth_candidates: Array[Vector2i] = []
-			for cluster_cell in cluster:
-				for row_offset in range(-1, 2):
-					for column_offset in range(-1, 2):
-						if row_offset == 0 and column_offset == 0:
-							continue
-						var candidate := cluster_cell + Vector2i(column_offset, row_offset)
-						if available_lookup.has(candidate) and candidate not in growth_candidates and not blocked_cells.has(candidate):
-							growth_candidates.append(candidate)
-			if growth_candidates.is_empty():
-				break
-			var next_cell: Vector2i = growth_candidates.pick_random()
-			available_lookup.erase(next_cell)
-			cluster.append(next_cell)
-		result.append_array(cluster)
-		for cluster_cell in cluster:
-			for row_offset in range(-1, 2):
-				for column_offset in range(-1, 2):
-					blocked_cells[cluster_cell + Vector2i(column_offset, row_offset)] = true
-	available_cells.clear()
-	for cell in available_lookup:
-		available_cells.append(cell)
-	return result
-
-
-func _begin_board_drag(position: Vector2) -> void:
-	drag_active = true
-	drag_moved = false
-	drag_start = position
-	drag_pan_start = board_pan
-
-
-func _update_board_drag(position: Vector2) -> void:
-	var offset := position - drag_start
-	if offset.length() > 10.0:
-		drag_moved = true
-	if drag_moved and zoom_level > 1.0:
-		board_pan = drag_pan_start + offset
-		_clamp_board_pan()
-		queue_redraw()
-
-
-func _finish_board_drag(position: Vector2) -> void:
-	var should_tap := not drag_moved and _board_rect().has_point(position)
-	drag_active = false
-	if should_tap:
-		_handle_board_tap(position)
-
-
-func _handle_board_tap(position: Vector2) -> void:
-	var cell := _screen_to_cell(position)
-	if not _is_inside_grid(cell):
-		return
-	var clicked_unit := _unit_at(cell)
-	if turn_phase == SHOOTING_PHASE and selected_unit != "" and clicked_unit in valid_targets:
-		_attack_selected_target(clicked_unit)
-	elif turn_phase == MOVEMENT_PHASE and clicked_unit == selected_unit and _unit_type(clicked_unit) in [MVC, MVB]:
-		_deploy_mobile_constructor(clicked_unit)
-	elif clicked_unit != "" and _unit_team(clicked_unit) == active_team:
-		_select_unit(clicked_unit)
-	elif turn_phase == MOVEMENT_PHASE and selected_unit != "" and cell in valid_moves:
-		_move_selected_unit(cell)
-	elif selected_unit != "":
-		var action_name := "move" if turn_phase == MOVEMENT_PHASE else "attack"
-		_set_status("That square is not a legal %s target." % action_name, true)
-
-
-func _select_unit(unit_id: String) -> void:
-	if _unit_team(unit_id) != active_team:
-		_set_status("It is %s's turn." % active_team.capitalize(), true)
-		return
-
-	_play_sfx(SELECT_SOUND)
-	_clear_selection()
-	var unit_type := _unit_type(unit_id)
-	if turn_phase == MOVEMENT_PHASE:
-		if unit_type == BASE:
-			selected_unit = unit_id
-			var availability := "Production spent this turn." if produced_bases.has(unit_id) else "One purchase available."
-			_set_status("%s shop selected · Treasury $%d · %s" % [_display_name(unit_id), gold[active_team], availability])
-		elif unit_type == CITY:
-			selected_unit = unit_id
-			_set_status("%s generates $%d at the start of every turn." % [_display_name(unit_id), CITY_INCOME])
-		elif unit_type == ARTILLERY:
-			_set_status("%s is stationary. It can fire during the shooting phase." % _display_name(unit_id))
-		elif moved_units.has(unit_id) and unit_type in [MVC, MVB] and not fired_units.has(unit_id):
-			selected_unit = unit_id
-			_set_status("%s has moved · Click it again to deploy it here." % _display_name(unit_id))
-		elif moved_units.has(unit_id):
-			_set_status("%s has already moved this turn." % _display_name(unit_id), true)
-		else:
-			selected_unit = unit_id
-			valid_moves = _get_valid_moves(unit_id)
-			if unit_type in [SPYGLASS, MOTORCYCLE]:
-				spyglass_range_cells = _spyglass_range(unit_id)
-			if unit_type in [MVC, MVB]:
-				_set_status("%s selected · Choose a destination, or click it again to deploy it here." % _display_name(unit_id))
-			else:
-				_set_status("%s selected · Choose an arrow-marked destination to confirm its move." % _display_name(unit_id))
-	else:
-		if unit_type == ARTILLERY:
-			if fired_units.has(unit_id):
-				_set_status("%s has already fired this turn." % _display_name(unit_id), true)
-			else:
-				selected_artillery = unit_id
-				_set_status("%s armed · Enter any coordinate from %s." % [_display_name(unit_id), _coordinate_range_text()])
-		elif unit_type in [SPYGLASS, MOTORCYCLE]:
-			selected_unit = unit_id
-			spyglass_range_cells = _spyglass_range(unit_id)
-			_set_status("%s has no attack · Scouting coordinates remain visible." % _display_name(unit_id))
-		elif unit_type in [MOBILE_FLANK, TURRET, TANK, TANK_DESTROYER, GRENADE]:
-			if fired_units.has(unit_id):
-				_set_status("%s has already attacked this turn." % _display_name(unit_id), true)
-			else:
-				selected_unit = unit_id
-				valid_targets = _get_unit_targets(unit_id)
-				if unit_type == MOBILE_FLANK:
-					_set_status("%s armed · Enter a coordinate within 10 squares." % _display_name(unit_id))
-				elif unit_type == TURRET:
-					_set_status("%s armed · Select a marked target or enter a coordinate within 4 squares." % _display_name(unit_id))
-				else:
-					_set_status("%s armed · Select an adjacent legal target." % _display_name(unit_id))
-		else:
-			_set_status("%s has no shooting-phase action." % _display_name(unit_id), true)
-	queue_redraw()
-
-
-func _move_selected_unit(destination: Vector2i) -> void:
-	var unit_id := selected_unit
-	var path := _movement_path(unit_id, destination)
-	if path.is_empty():
-		_set_status("No legal path reaches that destination.", true)
-		return
-	_clear_selection()
-	await _animate_unit_move(unit_id, path)
-	moved_units[unit_id] = true
-	_play_sfx(MOVE_SOUND)
-	_set_status("%s moved to %s. Other units may still move." % [_display_name(unit_id), _cell_to_coordinate(destination)])
-	queue_redraw()
-
-
-func _deploy_mobile_constructor(unit_id: String) -> void:
-	if not units.has(unit_id) or unit_id != selected_unit:
-		return
-	var constructor_type := _unit_type(unit_id)
-	if constructor_type not in [MVC, MVB]:
-		return
-	if moved_units.has(unit_id) and fired_units.has(unit_id):
-		_set_status("%s was purchased this turn and can deploy next turn." % _display_name(unit_id), true)
-		return
-	var team := _unit_team(unit_id)
-	var cell: Vector2i = units[unit_id]
-	var structure_type := CITY if constructor_type == MVC else BASE
-	var structure_id := "%s_%s_%d" % [team, structure_type, unit_serial]
-	unit_serial += 1
-	units.erase(unit_id)
-	moved_units.erase(unit_id)
-	fired_units.erase(unit_id)
-	units[structure_id] = cell
-	_clear_selection()
-	_update_economy_label()
-	_play_sfx(CONFIRM_SOUND)
-	var benefit := "$%d income starting next turn" % CITY_INCOME if structure_type == CITY else "one unit of production per movement phase"
-	_set_status("%s deployed as a %s at %s · %s." % [_display_unit_type(constructor_type), _display_unit_type(structure_type), _cell_to_coordinate(cell), benefit])
-	queue_redraw()
-
-
-func _animate_unit_move(unit_id: String, path: Array[Vector2i]) -> void:
-	action_in_progress = true
-	phase_button.disabled = true
-	movement_animation_unit = unit_id
-	for destination in path:
-		movement_animation_from = units[unit_id]
-		movement_animation_to = destination
-		movement_animation_progress = 0.0
-		var tween := create_tween()
-		tween.tween_method(_set_movement_animation_progress, 0.0, 1.0, MOVE_STEP_DURATION).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		await tween.finished
-		units[unit_id] = destination
-	movement_animation_unit = ""
-	movement_animation_progress = 0.0
-	action_in_progress = false
-	phase_button.disabled = false
-
-
-func _set_movement_animation_progress(progress: float) -> void:
-	movement_animation_progress = progress
-	queue_redraw()
-
-
-func _movement_path(unit_id: String, destination: Vector2i) -> Array[Vector2i]:
-	return _unit_path(unit_id, destination, _unit_type(unit_id) == SPYGLASS)
-
-
-func _unit_path(unit_id: String, destination: Vector2i, allow_mountains: bool) -> Array[Vector2i]:
-	var start: Vector2i = units[unit_id]
-	var frontier: Array[Vector2i] = [start]
-	var distances: Dictionary[Vector2i, float] = {start: 0.0}
-	var previous: Dictionary[Vector2i, Vector2i] = {}
-	var directions: Array[Vector2i] = [
-		Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
-		Vector2i(-1, 0), Vector2i(1, 0),
-		Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1),
-	]
-	while not frontier.is_empty():
-		var closest_index := 0
-		for index in range(1, frontier.size()):
-			if distances[frontier[index]] < distances[frontier[closest_index]]:
-				closest_index = index
-		var current: Vector2i = frontier.pop_at(closest_index)
-		if current == destination:
-			break
-		for direction in directions:
-			var next_cell: Vector2i = current + direction
-			if not _is_inside_grid(next_cell) or (next_cell in mountains and not allow_mountains) or _unit_at(next_cell) != "":
-				continue
-			var next_distance: float = distances[current] + (sqrt(2.0) if direction.x != 0 and direction.y != 0 else 1.0)
-			if distances.has(next_cell) and distances[next_cell] <= next_distance:
-				continue
-			distances[next_cell] = next_distance
-			previous[next_cell] = current
-			if next_cell not in frontier:
-				frontier.append(next_cell)
-	if not previous.has(destination):
-		return []
-	var result: Array[Vector2i] = []
-	var current := destination
-	while current != start:
-		result.push_front(current)
-		current = previous[current]
-	return result
-
-
-func _get_valid_moves(unit_id: String) -> Array[Vector2i]:
-	var unit_type := _unit_type(unit_id)
-	if unit_type == SPYGLASS:
-		return _spyglass_moves(unit_id)
-	var movement_ranges := {
-		TURRET: 4.0,
-		GRENADE: 4.0,
-		TANK: 3.0,
-		MOBILE_FLANK: 3.0,
-		TANK_DESTROYER: 3.0,
-		MOTORCYCLE: 10.0,
-		MVC: 4.0,
-		MVB: 4.0,
+func get_game_state() -> Dictionary:
+	return {
+		"mana": mana,
+		"base_health": base_health,
+		"kills": kills,
+		"defender_count": defenders.size(),
+		"enemy_count": enemies.size(),
+		"game_over": game_over,
 	}
-	if movement_ranges.has(unit_type):
-		return _ground_unit_moves(unit_id, movement_ranges[unit_type])
-	return []
-
-
-func _produce_unit(unit_type: String) -> void:
-	if game_over or handoff_pending or action_in_progress:
-		return
-	if turn_phase != MOVEMENT_PHASE:
-		_set_status("Units can only be purchased during the movement phase.", true)
-		return
-	if selected_unit == "" or not units.has(selected_unit) or _unit_team(selected_unit) != active_team or _unit_type(selected_unit) != BASE:
-		_set_status("Select one of your bases before producing a unit.", true)
-		return
-	var base_id := selected_unit
-	if produced_bases.has(base_id):
-		_set_status("This base has already produced a unit this turn.", true)
-		return
-	var cost: int = UNIT_COSTS[unit_type]
-	if gold[active_team] < cost:
-		_set_status("%s costs $%d. %s has $%d." % [_display_unit_type(unit_type), cost, active_team.capitalize(), gold[active_team]], true)
-		return
-
-	var directions: Array[Vector2i] = [
-		Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
-		Vector2i(-1, 0), Vector2i(1, 0),
-		Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1),
-	]
-	directions.shuffle()
-	var spawn_cell := Vector2i(-1, -1)
-	for direction in directions:
-		var candidate: Vector2i = units[base_id] + direction
-		if _is_inside_grid(candidate) and candidate not in mountains and _unit_at(candidate) == "":
-			spawn_cell = candidate
-			break
-
-	if not _is_inside_grid(spawn_cell):
-		_set_status("The base is surrounded. Clear an adjacent square first.", true)
-		return
-
-	var new_unit_id := "%s_%s_%d" % [active_team, unit_type, unit_serial]
-	unit_serial += 1
-	units[new_unit_id] = spawn_cell
-	gold[active_team] -= cost
-	produced_bases[base_id] = true
-	moved_units[new_unit_id] = true
-	fired_units[new_unit_id] = true
-	_update_economy_label()
-	_play_sfx(CONFIRM_SOUND)
-	_clear_selection()
-	_set_status("%s purchased %s for $%d at %s. It can act next turn." % [_display_name(base_id), _display_name(new_unit_id), cost, _cell_to_coordinate(spawn_cell)])
-	queue_redraw()
-
-
-func _spyglass_moves(unit_id: String) -> Array[Vector2i]:
-	return _pathfinding_moves(unit_id, 3.0, true)
-
-
-func _spyglass_range(unit_id: String) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	var start: Vector2i = units[unit_id]
-	for row in range(grid_size):
-		for column in range(grid_size):
-			var cell := Vector2i(column, row)
-			var offset := cell - start
-			var distance_squared: int = offset.x * offset.x + offset.y * offset.y
-			if distance_squared > 0 and distance_squared <= 9:
-				result.append(cell)
-	return result
-
-
-func _ground_unit_moves(unit_id: String, maximum_distance: float) -> Array[Vector2i]:
-	return _pathfinding_moves(unit_id, maximum_distance, false)
-
-
-func _pathfinding_moves(unit_id: String, maximum_distance: float, allow_mountains: bool) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	var start: Vector2i = units[unit_id]
-	var frontier: Array[Vector2i] = [start]
-	var distances: Dictionary[Vector2i, float] = {start: 0.0}
-	var directions: Array[Vector2i] = [
-		Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1),
-		Vector2i(-1, 0), Vector2i(1, 0),
-		Vector2i(-1, 1), Vector2i(0, 1), Vector2i(1, 1),
-	]
-
-	while not frontier.is_empty():
-		var closest_index := 0
-		for index in range(1, frontier.size()):
-			if distances[frontier[index]] < distances[frontier[closest_index]]:
-				closest_index = index
-		var current: Vector2i = frontier.pop_at(closest_index)
-		var distance: float = distances[current]
-		for direction in directions:
-			var next_cell: Vector2i = current + direction
-			if not _is_inside_grid(next_cell):
-				continue
-			if (next_cell in mountains and not allow_mountains) or _unit_at(next_cell) != "":
-				continue
-			var step_cost := sqrt(2.0) if direction.x != 0 and direction.y != 0 else 1.0
-			var next_distance: float = distance + step_cost
-			if next_distance > maximum_distance:
-				continue
-			if distances.has(next_cell) and distances[next_cell] <= next_distance:
-				continue
-			distances[next_cell] = next_distance
-			if next_cell not in frontier:
-				frontier.append(next_cell)
-			if next_cell not in result:
-				result.append(next_cell)
-	return result
-
-
-func _is_unit_visible_to_active_team(unit_id: String) -> bool:
-	if _unit_team(unit_id) == active_team:
-		return true
-	var target: Vector2i = units[unit_id]
-	var target_is_in_tree := target in trees
-	for observer_id in units:
-		if _unit_team(observer_id) != active_team or _unit_type(observer_id) not in [SPYGLASS, MOTORCYCLE]:
-			continue
-		var observer: Vector2i = units[observer_id]
-		var offset := target - observer
-		if target_is_in_tree:
-			if maxi(absi(offset.x), absi(offset.y)) <= 1:
-				return true
-		elif offset.x * offset.x + offset.y * offset.y <= 9:
-			return true
-	for attacker_id in units:
-		if _unit_team(attacker_id) == active_team and unit_id in _get_unit_targets(attacker_id):
-			return true
-	return false
-
-
-func _get_unit_targets(unit_id: String) -> Array[String]:
-	var result: Array[String] = []
-	var attacker_type := _unit_type(unit_id)
-	if attacker_type not in [TURRET, TANK, TANK_DESTROYER, GRENADE]:
-		return result
-	var start: Vector2i = units[unit_id]
-	for target_id in units:
-		if _unit_team(target_id) == _unit_team(unit_id):
-			continue
-		var target: Vector2i = units[target_id]
-		var distance: int = maxi(absi(target.x - start.x), absi(target.y - start.y))
-		var target_type := _unit_type(target_id)
-		if attacker_type == TURRET and distance <= 4 and target_type in [SPYGLASS, GRENADE]:
-			result.append(target_id)
-		elif attacker_type == TANK and distance == 1 and target_type in [TURRET, GRENADE]:
-			result.append(target_id)
-		elif attacker_type == TANK_DESTROYER and distance == 1 and target_type == TANK:
-			result.append(target_id)
-		elif attacker_type == GRENADE and distance == 1 and target_type == TANK_DESTROYER:
-			result.append(target_id)
-	return result
-
-
-func _attack_selected_target(target_id: String) -> void:
-	if _unit_type(selected_unit) == TURRET:
-		_fire_turret_at(target_id)
-	else:
-		_attack_adjacent_target(target_id)
-
-
-func _attack_adjacent_target(target_id: String) -> void:
-	var attacker_id := selected_unit
-	if target_id not in _get_unit_targets(attacker_id):
-		_set_status("That unit cannot attack this target.", true)
-		return
-	var defeated_team := _unit_team(target_id)
-	var target_cell: Vector2i = units[target_id]
-	var message := "%s destroyed %s at %s!" % [_display_name(attacker_id), _display_name(target_id), _cell_to_coordinate(target_cell)]
-	units.erase(target_id)
-	_record_impact(target_cell)
-	fired_units[attacker_id] = true
-	_clear_selection()
-	if _check_for_winner(defeated_team):
-		return
-	_set_status("%s Other units may still attack." % message)
-
-
-func _fire_turret_at(target_id: String) -> void:
-	_fire_turret_at_coordinate(units[target_id])
-
-
-func _fire_turret_at_coordinate(target: Vector2i) -> void:
-	var attacker_id := selected_unit
-	var start: Vector2i = units[attacker_id]
-	var distance: int = maxi(absi(target.x - start.x), absi(target.y - start.y))
-	if distance > 4:
-		_set_status("That coordinate is beyond the turret's 4-square range.", true)
-		return
-	var hit_unit := _unit_at(target)
-	if hit_unit != "" and _unit_team(hit_unit) == active_team:
-		_set_status("Cannot fire on a friendly unit at %s." % _cell_to_coordinate(target), true)
-		return
-
-	_record_impact(target)
-	var fire_message := "%s fired at %s: miss." % [_display_name(attacker_id), _cell_to_coordinate(target)]
-	if hit_unit != "" and _unit_type(hit_unit) in [SPYGLASS, GRENADE]:
-		units.erase(hit_unit)
-		fire_message = "%s shot %s at %s!" % [_display_name(attacker_id), _display_name(hit_unit), _cell_to_coordinate(target)]
-
-	coordinate_input.clear()
-	fired_units[attacker_id] = true
-	_clear_selection()
-	if hit_unit != "" and _unit_type(hit_unit) in [SPYGLASS, GRENADE] and _check_for_winner(_unit_team(hit_unit)):
-		return
-	_set_status("%s Other units may still attack." % fire_message)
-
-
-func _on_coordinate_submitted(_coordinate: String) -> void:
-	_fire_at_entered_coordinate()
-
-
-func _fire_at_entered_coordinate() -> void:
-	if game_over or handoff_pending or action_in_progress:
-		return
-	if turn_phase != SHOOTING_PHASE:
-		_set_status("Advance to the shooting phase before firing.", true)
-		return
-	var target := _coordinate_to_cell(coordinate_input.text)
-	if not _is_inside_grid(target):
-		_set_status("Invalid coordinate. Enter %s." % _coordinate_range_text(), true)
-		return
-	if selected_unit != "" and _unit_type(selected_unit) == TURRET:
-		_fire_turret_at_coordinate(target)
-		return
-	if selected_unit != "" and _unit_type(selected_unit) == MOBILE_FLANK:
-		_fire_mobile_flank_at_coordinate(target)
-		return
-	if selected_unit != "":
-		_set_status("Select artillery, a turret, or a Mobile Flank for coordinate fire.", true)
-		return
-	if selected_artillery == "" or not units.has(selected_artillery):
-		_set_status("Select one of the remaining artillery units first.", true)
-		return
-	if _unit_team(selected_artillery) != active_team:
-		_set_status("Only %s artillery can fire this turn." % active_team.capitalize(), true)
-		return
-	if fired_units.has(selected_artillery):
-		_set_status("%s has already fired this turn." % _display_name(selected_artillery), true)
-		return
-
-	var hit_unit := _unit_at(target)
-	if hit_unit != "" and _unit_team(hit_unit) == _unit_team(selected_artillery):
-		_set_status("Cannot fire on a friendly unit at %s." % _cell_to_coordinate(target), true)
-		return
-
-	_record_impact(target)
-	var fire_message := ""
-	if hit_unit == "":
-		fire_message = "%s fired at %s: miss." % [_display_name(selected_artillery), _cell_to_coordinate(target)]
-	elif _unit_type(hit_unit) == TANK_DESTROYER:
-		fire_message = "%s fired at %s, but %s's armour held." % [_display_name(selected_artillery), _cell_to_coordinate(target), _display_name(hit_unit)]
-	else:
-		units.erase(hit_unit)
-		fire_message = "%s fired at %s and hit %s!" % [_display_name(selected_artillery), _cell_to_coordinate(target), _display_name(hit_unit)]
-
-	coordinate_input.clear()
-	await _animate_cannon_shot(selected_artillery, target)
-	fired_units[selected_artillery] = true
-	if hit_unit != "" and _unit_type(hit_unit) != TANK_DESTROYER and _check_for_winner(_unit_team(hit_unit)):
-		return
-	_set_status("%s Other units may still attack." % fire_message)
-
-
-func _fire_mobile_flank_at_coordinate(target: Vector2i) -> void:
-	var attacker_id := selected_unit
-	if fired_units.has(attacker_id):
-		_set_status("%s has already fired this turn." % _display_name(attacker_id), true)
-		return
-	var offset: Vector2i = target - units[attacker_id]
-	if offset.x * offset.x + offset.y * offset.y > 100:
-		_set_status("That coordinate is beyond the Mobile Flank's 10-square range.", true)
-		return
-	var hit_unit := _unit_at(target)
-	if hit_unit != "" and _unit_team(hit_unit) == active_team:
-		_set_status("Cannot fire on a friendly unit at %s." % _cell_to_coordinate(target), true)
-		return
-	_record_impact(target)
-	var message := "%s fired at %s: miss." % [_display_name(attacker_id), _cell_to_coordinate(target)]
-	var destroyed_unit := false
-	if hit_unit != "" and _unit_type(hit_unit) == TANK_DESTROYER:
-		message = "%s fired at %s, but %s's armour held." % [_display_name(attacker_id), _cell_to_coordinate(target), _display_name(hit_unit)]
-	elif hit_unit != "":
-		units.erase(hit_unit)
-		destroyed_unit = true
-		message = "%s fired at %s and hit %s!" % [_display_name(attacker_id), _cell_to_coordinate(target), _display_name(hit_unit)]
-	coordinate_input.clear()
-	fired_units[attacker_id] = true
-	_clear_selection()
-	if destroyed_unit and _check_for_winner(_unit_team(hit_unit)):
-		return
-	_set_status("%s Other units may still attack." % message)
-
-
-func _animate_cannon_shot(attacker_id: String, target: Vector2i) -> void:
-	action_in_progress = true
-	get_viewport().gui_release_focus()
-	fire_button.disabled = true
-	phase_button.disabled = true
-	reset_button.disabled = true
-	grid_size_input.editable = false
-	zoom_out_button.disabled = true
-	zoom_in_button.disabled = true
-	fit_button.disabled = true
-	sound_button.disabled = true
-	coordinate_input.editable = false
-	cannon_animation_unit = attacker_id
-	var offset := Vector2(target - units[attacker_id])
-	cannon_direction = offset.normalized() if offset != Vector2.ZERO else Vector2.RIGHT
-	cannon_animation_time = CANNON_ANIMATION_DURATION
-	cannon_cinematic_time = CANNON_CINEMATIC_DURATION
-	cannon_cinematic_image.scale = Vector2.ONE
-	cannon_cinematic_image.rotation = 0.0
-	cannon_cinematic_image.pivot_offset = cannon_cinematic_image.size * 0.5
-	cannon_cinematic_flash.color.a = 0.72
-	cannon_cinematic_countdown.text = "SHOT IN FLIGHT · 3.0"
-	cannon_cinematic_overlay.show()
-	queue_redraw()
-	await get_tree().create_timer(CANNON_CINEMATIC_DURATION).timeout
-	cannon_cinematic_overlay.hide()
-	cannon_cinematic_time = 0.0
-	cannon_animation_time = 0.0
-	cannon_animation_unit = ""
-	action_in_progress = false
-	reset_button.disabled = false
-	grid_size_input.editable = true
-	zoom_out_button.disabled = false
-	zoom_in_button.disabled = false
-	fit_button.disabled = false
-	sound_button.disabled = false
-	if not game_over:
-		_update_phase_controls()
-	queue_redraw()
-
-
-func _record_impact(target: Vector2i) -> void:
-	impact_cells.append(target)
-	if impact_cells.size() > 6:
-		impact_cells.pop_front()
-	impact_flash_time = 0.5
-	_play_sfx(IMPACT_SOUND)
-	queue_redraw()
-
-
-func _clear_selection() -> void:
-	selected_unit = ""
-	valid_moves.clear()
-	spyglass_range_cells.clear()
-	valid_targets.clear()
-
-
-func _check_for_winner(defeated_team: String) -> bool:
-	var artillery_alive := units.has("%s_artillery" % defeated_team)
-	var support_unit_alive := false
-	for unit_id in units:
-		if _unit_team(unit_id) == defeated_team and _unit_type(unit_id) not in [ARTILLERY, BASE, CITY]:
-			support_unit_alive = true
-			break
-	if artillery_alive and support_unit_alive:
-		return false
-
-	game_over = true
-	var winner := BLUE if defeated_team == RED else RED
-	var defeat_reason := "artillery destroyed" if not artillery_alive else "all support units destroyed"
-	selected_unit = ""
-	selected_artillery = ""
-	valid_moves.clear()
-	spyglass_range_cells.clear()
-	valid_targets.clear()
-	coordinate_input.editable = false
-	fire_button.disabled = true
-	make_spyglass_button.disabled = true
-	make_turret_button.disabled = true
-	make_tank_button.disabled = true
-	make_mobile_flank_button.disabled = true
-	make_motorcycle_button.disabled = true
-	make_tank_destroyer_button.disabled = true
-	make_grenade_button.disabled = true
-	make_mvc_button.disabled = true
-	make_mvb_button.disabled = true
-	phase_button.disabled = true
-	turn_label.text = "%s VICTORY" % winner.to_upper()
-	turn_label.modulate = TEAM_COLORS[winner]
-	_set_status("%s wins — %s's %s. Start a new map to play again." % [winner.capitalize(), defeated_team.capitalize(), defeat_reason])
-	_play_jingle(VICTORY_SOUND)
-	queue_redraw()
-	return true
-
-
-func _end_turn(action_message: String) -> void:
-	active_team = BLUE if active_team == RED else RED
-	turn_number += 1
-	turn_phase = MOVEMENT_PHASE
-	moved_units.clear()
-	fired_units.clear()
-	produced_bases.clear()
-	_clear_selection()
-	selected_artillery = "%s_artillery" % active_team if units.has("%s_artillery" % active_team) else ""
-	_set_status("%s %s command is next." % [action_message, active_team.capitalize()])
-	_update_turn_label()
-	_update_economy_label()
-	_update_phase_controls()
-	_start_turn_transition(action_message)
-	queue_redraw()
-
-
-func _advance_phase() -> void:
-	if game_over or handoff_pending or action_in_progress:
-		return
-	_clear_selection()
-	if turn_phase == MOVEMENT_PHASE:
-		turn_phase = SHOOTING_PHASE
-		selected_artillery = "%s_artillery" % active_team if units.has("%s_artillery" % active_team) else ""
-		_set_status("Shooting phase · Artillery and every combat unit may attack once. Select Mobile Flanks individually.")
-		_play_sfx(CONFIRM_SOUND)
-		_update_turn_label()
-		_update_phase_controls()
-		queue_redraw()
-	else:
-		_end_turn("%s completed its shooting phase." % active_team.capitalize())
-
-
-func _start_turn_transition(action_message: String) -> void:
-	handoff_pending = true
-	pending_handoff_message = action_message
-	transition_active = true
-	transition_countdown = OPPONENT_TURN_DELAY
-	displayed_countdown_second = ceili(transition_countdown)
-	handoff_security_label.text = "COMMAND TRANSFER"
-	handoff_title.text = "OPPONENT'S TURN"
-	handoff_title.modulate = GOLD_COLOR
-	begin_turn_button.hide()
-	_update_transition_message()
-	handoff_overlay.show()
-
-
-func _update_transition_message() -> void:
-	handoff_message.text = "%s command will be ready in %d seconds.\nThe battlefield remains hidden." % [active_team.capitalize(), displayed_countdown_second]
-
-
-func _show_handoff(action_message: String) -> void:
-	handoff_pending = true
-	pending_handoff_message = action_message
-	transition_active = false
-	handoff_security_label.text = "PRIVATE COMMAND HANDOFF"
-	handoff_title.text = "%s COMMAND" % active_team.to_upper()
-	handoff_title.modulate = TEAM_COLORS[active_team]
-	if turn_number == 1:
-		handoff_message.text = "Pass the device to Red.\nThe battlefield stays hidden until they are ready."
-	else:
-		handoff_message.text = "Pass the device to %s.\n\nPrevious action: %s" % [active_team.capitalize(), action_message]
-	begin_turn_button.text = "BEGIN %s TURN" % active_team.to_upper()
-	begin_turn_button.show()
-	handoff_overlay.show()
-
-
-func _begin_turn() -> void:
-	if transition_active:
-		return
-	handoff_pending = false
-	handoff_overlay.hide()
-	var income := _collect_city_income()
-	_update_phase_controls()
-	_set_status("%s collected $%d city income · Movement phase ready." % [active_team.capitalize(), income])
-	_play_sfx(CONFIRM_SOUND)
-	queue_redraw()
-
-
-func _update_turn_label() -> void:
-	turn_label.text = "%s · TURN %d · %s" % [active_team.to_upper(), turn_number, turn_phase.to_upper()]
-	turn_label.modulate = TEAM_COLORS[active_team]
-
-
-func _update_phase_controls() -> void:
-	var is_movement := turn_phase == MOVEMENT_PHASE
-	phase_button.text = "BEGIN SHOOTING" if is_movement else "END TURN"
-	phase_button.disabled = game_over or action_in_progress
-	coordinate_input.editable = not is_movement and not game_over
-	fire_button.disabled = is_movement or game_over or action_in_progress
-	for button in [make_spyglass_button, make_turret_button, make_tank_button, make_mobile_flank_button, make_motorcycle_button, make_tank_destroyer_button, make_grenade_button, make_mvc_button, make_mvb_button]:
-		button.disabled = not is_movement or game_over
-
-
-func _collect_city_income() -> int:
-	var income := _count_team_units(active_team, CITY) * CITY_INCOME
-	gold[active_team] += income
-	_update_economy_label()
-	return income
-
-
-func _count_team_units(team: String, unit_type: String) -> int:
-	var count := 0
-	for unit_id in units:
-		if _unit_team(unit_id) == team and _unit_type(unit_id) == unit_type:
-			count += 1
-	return count
-
-
-func _update_economy_label() -> void:
-	var city_count := _count_team_units(active_team, CITY)
-	var city_word := "CITY" if city_count == 1 else "CITIES"
-	economy_label.text = "%s TREASURY  $%d  •  %d %s  (+$%d/TURN)" % [active_team.to_upper(), gold[active_team], city_count, city_word, city_count * CITY_INCOME]
-
-
-func _change_zoom(factor: float, focus := Vector2(-1.0, -1.0)) -> void:
-	if focus.x < 0.0:
-		focus = _board_rect().get_center()
-	var old_zoom := zoom_level
-	var new_zoom := clampf(zoom_level * factor, 1.0, MAX_ZOOM)
-	if is_equal_approx(old_zoom, new_zoom):
-		return
-	var focus_cell_position := (focus - board_origin - board_pan) / (cell_size * old_zoom)
-	zoom_level = new_zoom
-	board_pan = focus - board_origin - focus_cell_position * cell_size * zoom_level
-	_clamp_board_pan()
-	_update_zoom_controls()
-	queue_redraw()
-
-
-func _reset_zoom() -> void:
-	zoom_level = 1.0
-	board_pan = Vector2.ZERO
-	_update_zoom_controls()
-	queue_redraw()
-
-
-func _clamp_board_pan() -> void:
-	var minimum := BOARD_SIZE - BOARD_SIZE * zoom_level
-	board_pan.x = clampf(board_pan.x, minimum, 0.0)
-	board_pan.y = clampf(board_pan.y, minimum, 0.0)
-
-
-func _update_zoom_controls() -> void:
-	zoom_label.text = "%d%%" % roundi(zoom_level * 100.0)
-	zoom_out_button.disabled = zoom_level <= 1.001
-	zoom_in_button.disabled = zoom_level >= MAX_ZOOM - 0.001
-
-
-func _toggle_sound() -> void:
-	sound_enabled = not sound_enabled
-	sound_button.text = "SOUND ON" if sound_enabled else "SOUND OFF"
-	if sound_enabled:
-		_play_sfx(CONFIRM_SOUND)
-	else:
-		sfx_player.stop()
-		jingle_player.stop()
-
-
-func _play_sfx(stream: AudioStream) -> void:
-	if not sound_enabled:
-		return
-	sfx_player.stream = stream
-	sfx_player.play()
-
-
-func _play_jingle(stream: AudioStream) -> void:
-	if not sound_enabled:
-		return
-	jingle_player.stream = stream
-	jingle_player.play()
-
-
-func _set_status(message: String, is_error := false) -> void:
-	status_label.text = message
-	status_label.modulate = ERROR_COLOR if is_error else TEXT_COLOR
-	if is_error:
-		_play_sfx(ERROR_SOUND)
-
-
-func _layout_hud() -> void:
-	var viewport_size := get_viewport_rect().size
-	background.position = Vector2.ZERO
-	background.size = viewport_size
-	var left := maxf(24.0, (viewport_size.x - BOARD_SIZE) * 0.5)
-	board_origin = Vector2(left, BOARD_TOP)
-
-	$Hud/TopPanel.position = Vector2(left, 16.0)
-	$Hud/TopPanel.size = Vector2(BOARD_SIZE, 214.0)
-	$Hud/TitleLabel.position = Vector2(left + 20.0, 28.0)
-	$Hud/TitleLabel.size = Vector2(560.0, 42.0)
-	$Hud/SubtitleLabel.position = Vector2(left + 20.0, 70.0)
-	$Hud/SubtitleLabel.size = Vector2(560.0, 22.0)
-	turn_label.position = Vector2(left + 20.0, 99.0)
-	turn_label.size = Vector2(560.0, 32.0)
-	$Hud/LegendLabel.position = Vector2(left + 20.0, 134.0)
-	$Hud/LegendLabel.size = Vector2(560.0, 24.0)
-	$Hud/StatusPanel.position = Vector2(left + 12.0, 166.0)
-	$Hud/StatusPanel.size = Vector2(576.0, 54.0)
-	status_label.position = Vector2(left + 26.0, 172.0)
-	status_label.size = Vector2(548.0, 42.0)
-	$Hud/BoardFrame.position = board_origin - Vector2(6.0, 6.0)
-	$Hud/BoardFrame.size = Vector2(612.0, 612.0)
-
-	sound_button.position = board_origin + Vector2(12.0, 12.0)
-	sound_button.size = Vector2(104.0, 42.0)
-	fit_button.position = board_origin + Vector2(354.0, 12.0)
-	fit_button.size = Vector2(68.0, 42.0)
-	zoom_out_button.position = board_origin + Vector2(430.0, 12.0)
-	zoom_out_button.size = Vector2(44.0, 42.0)
-	zoom_label.position = board_origin + Vector2(478.0, 12.0)
-	zoom_label.size = Vector2(70.0, 42.0)
-	zoom_in_button.position = board_origin + Vector2(552.0, 12.0)
-	zoom_in_button.size = Vector2(36.0, 42.0)
-
-	$Hud/InstructionsLabel.position = Vector2(left + 16.0, 864.0)
-	$Hud/InstructionsLabel.size = Vector2(344.0, 46.0)
-	phase_button.position = Vector2(left + 370.0, 864.0)
-	phase_button.size = Vector2(214.0, 46.0)
-	$Hud/ControlPanel.position = Vector2(left, 918.0)
-	$Hud/ControlPanel.size = Vector2(BOARD_SIZE, 300.0)
-	coordinate_input.position = Vector2(left + 16.0, 934.0)
-	coordinate_input.size = Vector2(350.0, 54.0)
-	fire_button.position = Vector2(left + 380.0, 934.0)
-	fire_button.size = Vector2(204.0, 54.0)
-	$Hud/GridSizeLabel.position = Vector2(left + 16.0, 1000.0)
-	$Hud/GridSizeLabel.size = Vector2(108.0, 52.0)
-	grid_size_input.position = Vector2(left + 128.0, 1000.0)
-	grid_size_input.size = Vector2(102.0, 52.0)
-	reset_button.position = Vector2(left + 244.0, 1000.0)
-	reset_button.size = Vector2(340.0, 52.0)
-	make_spyglass_button.position = Vector2(left + 16.0, 1058.0)
-	make_spyglass_button.size = Vector2(180.0, 42.0)
-	make_turret_button.position = Vector2(left + 210.0, 1058.0)
-	make_turret_button.size = Vector2(180.0, 42.0)
-	make_grenade_button.position = Vector2(left + 404.0, 1058.0)
-	make_grenade_button.size = Vector2(180.0, 42.0)
-	make_tank_button.position = Vector2(left + 16.0, 1108.0)
-	make_tank_button.size = Vector2(180.0, 42.0)
-	make_motorcycle_button.position = Vector2(left + 210.0, 1108.0)
-	make_motorcycle_button.size = Vector2(180.0, 42.0)
-	make_mobile_flank_button.position = Vector2(left + 404.0, 1108.0)
-	make_mobile_flank_button.size = Vector2(180.0, 42.0)
-	make_tank_destroyer_button.position = Vector2(left + 16.0, 1158.0)
-	make_tank_destroyer_button.size = Vector2(150.0, 46.0)
-	make_mvc_button.position = Vector2(left + 180.0, 1158.0)
-	make_mvc_button.size = Vector2(194.0, 46.0)
-	make_mvb_button.position = Vector2(left + 388.0, 1158.0)
-	make_mvb_button.size = Vector2(196.0, 46.0)
-	$Hud/FooterLabel.position = Vector2(left + 16.0, 1224.0)
-	$Hud/FooterLabel.size = Vector2(568.0, 36.0)
-	_clamp_board_pan()
-	queue_redraw()
-
-
-func _apply_visual_theme() -> void:
-	var normal := _make_style(Color("202b43"), Color("3b4c6c"), 10, 2)
-	var hover := _make_style(Color("2b3b59"), GOLD_COLOR, 10, 2)
-	var pressed := _make_style(Color("10182a"), Color("8fe7ff"), 10, 2)
-	var disabled := _make_style(Color("171e2d"), Color("29344a"), 10, 1)
-	for node in get_tree().get_nodes_in_group("action_button"):
-		var button := node as Button
-		button.add_theme_stylebox_override("normal", normal)
-		button.add_theme_stylebox_override("hover", hover)
-		button.add_theme_stylebox_override("pressed", pressed)
-		button.add_theme_stylebox_override("focus", hover)
-		button.add_theme_stylebox_override("disabled", disabled)
-		button.add_theme_color_override("font_color", TEXT_COLOR)
-		button.add_theme_color_override("font_hover_color", Color.WHITE)
-		button.add_theme_color_override("font_pressed_color", Color.WHITE)
-		button.add_theme_color_override("font_disabled_color", Color("667085"))
-		button.button_down.connect(_play_sfx.bind(CLICK_SOUND))
-
-	fire_button.add_theme_stylebox_override("normal", _make_style(Color("9f2f35"), Color("ff7b72"), 10, 2))
-	fire_button.add_theme_stylebox_override("hover", _make_style(Color("c13d42"), GOLD_COLOR, 10, 2))
-	begin_turn_button.add_theme_stylebox_override("normal", _make_style(Color("d9a72e"), Color("ffe39a"), 12, 2))
-	begin_turn_button.add_theme_stylebox_override("hover", _make_style(Color("f0be43"), Color.WHITE, 12, 2))
-	begin_turn_button.add_theme_color_override("font_color", Color("111827"))
-	begin_turn_button.add_theme_color_override("font_hover_color", Color("111827"))
-
-	var input_style := _make_style(Color("0d1424"), Color("3b4c6c"), 10, 2)
-	var input_focus := _make_style(Color("101a2e"), GOLD_COLOR, 10, 2)
-	coordinate_input.add_theme_stylebox_override("normal", input_style)
-	coordinate_input.add_theme_stylebox_override("focus", input_focus)
-	coordinate_input.add_theme_color_override("font_color", TEXT_COLOR)
-	coordinate_input.add_theme_color_override("font_placeholder_color", Color("718096"))
-	grid_size_input.add_theme_stylebox_override("normal", input_style)
-	grid_size_input.add_theme_stylebox_override("focus", input_focus)
-	_update_zoom_controls()
-
-
-func _make_style(background_color: Color, border_color: Color, radius: int, border_width: int) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = background_color
-	style.border_color = border_color
-	style.set_border_width_all(border_width)
-	style.corner_radius_top_left = radius
-	style.corner_radius_top_right = radius
-	style.corner_radius_bottom_left = radius
-	style.corner_radius_bottom_right = radius
-	style.content_margin_left = 10.0
-	style.content_margin_right = 10.0
-	style.content_margin_top = 8.0
-	style.content_margin_bottom = 8.0
-	return style
-
-
-func _coordinate_to_cell(coordinate: String) -> Vector2i:
-	var cleaned := coordinate.strip_edges().to_upper()
-	if cleaned.length() < 2 or cleaned.length() > 5:
-		return Vector2i(-1, -1)
-	var split_index := 0
-	while split_index < cleaned.length():
-		var character_code := cleaned.unicode_at(split_index)
-		if character_code < 65 or character_code > 90:
-			break
-		split_index += 1
-	if split_index == 0 or split_index == cleaned.length():
-		return Vector2i(-1, -1)
-	var column := 0
-	for index in range(split_index):
-		column = column * 26 + cleaned.unicode_at(index) - 64
-	var row_text := cleaned.substr(split_index)
-	if not row_text.is_valid_int():
-		return Vector2i(-1, -1)
-	return Vector2i(column - 1, row_text.to_int() - 1)
-
-
-func _cell_to_coordinate(cell: Vector2i) -> String:
-	var column_number := cell.x + 1
-	var column_letters := ""
-	while column_number > 0:
-		column_number -= 1
-		column_letters = String.chr(65 + column_number % 26) + column_letters
-		column_number = int(column_number / 26)
-	return "%s%d" % [column_letters, cell.y + 1]
-
-
-func _coordinate_range_text() -> String:
-	return "A1 through %s" % _cell_to_coordinate(Vector2i(grid_size - 1, grid_size - 1))
-
-
-func _unit_at(cell: Vector2i) -> String:
-	for unit_id in units:
-		if units[unit_id] == cell:
-			return unit_id
-	return ""
-
-
-func _unit_team(unit_id: String) -> String:
-	return RED if unit_id.begins_with("red_") else BLUE
-
-
-func _unit_type(unit_id: String) -> String:
-	return unit_id.get_slice("_", 1)
-
-
-func _screen_to_cell(screen_position: Vector2) -> Vector2i:
-	var local_position := screen_position - board_origin - board_pan
-	var effective_size := _effective_cell_size()
-	return Vector2i(floori(local_position.x / effective_size), floori(local_position.y / effective_size))
-
-
-func _cell_rect(cell: Vector2i) -> Rect2:
-	var effective_size := _effective_cell_size()
-	return Rect2(board_origin + board_pan + Vector2(cell) * effective_size, Vector2.ONE * effective_size)
-
-
-func _effective_cell_size() -> float:
-	return cell_size * zoom_level
-
-
-func _board_rect() -> Rect2:
-	return Rect2(board_origin, Vector2.ONE * BOARD_SIZE)
-
-
-func _visible_cell_bounds() -> Rect2i:
-	var effective_size := _effective_cell_size()
-	var first_column := clampi(floori(-board_pan.x / effective_size) - 1, 0, grid_size - 1)
-	var first_row := clampi(floori(-board_pan.y / effective_size) - 1, 0, grid_size - 1)
-	var last_column := clampi(ceili((BOARD_SIZE - board_pan.x) / effective_size) + 1, 1, grid_size)
-	var last_row := clampi(ceili((BOARD_SIZE - board_pan.y) / effective_size) + 1, 1, grid_size)
-	return Rect2i(Vector2i(first_column, first_row), Vector2i(last_column - first_column, last_row - first_row))
-
-
-func _is_cell_visible(cell: Vector2i) -> bool:
-	return _cell_rect(cell).intersects(_board_rect())
-
-
-func _is_inside_grid(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.x < grid_size and cell.y >= 0 and cell.y < grid_size
-
-
-func _display_name(unit_id: String) -> String:
-	return "%s %s" % [_unit_team(unit_id).capitalize(), _display_unit_type(_unit_type(unit_id))]
-
-
-func _display_unit_type(unit_type: String) -> String:
-	var names := {
-		ARTILLERY: "Artillery",
-		SPYGLASS: "Spyglass",
-		TURRET: "Turret",
-		BASE: "HQ",
-		CITY: "City",
-		MOBILE_FLANK: "Mobile Flank",
-		TANK: "Tank",
-		MOTORCYCLE: "Motorcycle",
-		TANK_DESTROYER: "Tank Destroyer",
-		GRENADE: "Grenade Men",
-		MVC: "Mobile City Vehicle",
-		MVB: "Mobile Base Vehicle",
-	}
-	return names.get(unit_type, unit_type.capitalize())
