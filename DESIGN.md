@@ -12,6 +12,7 @@
 - MVC and MVB use team-colored construction vehicles with high-contrast `C` and `B` roof signs to preview the structure each vehicle deploys.
 - Selecting a unit adds a high-contrast white ring, armed artillery receives a cyan ring, detected enemies receive a gold ring, and legal destinations use a green fill and outline.
 - Every square in a selected spyglass unit's circular range displays its coordinate, including occupied squares; only open squares receive movement highlights and accept movement.
+- Selecting a Spyglass or Motorcycle continues to display its scouting coordinates during the Shooting phase even though the scout has no attack.
 - Recent targets use animated orange impact markers. Cannon shots add recoil and a muzzle flash before resolving.
 - Stationary artillery fire temporarily replaces the command view with a three-second cinematic reenactment image. A warm discharge flash, slow image push, subtle camera vibration, smoke-filled frame, countdown, and explicit `HISTORICAL REENACTMENT` label provide realistic spectacle without implying archival footage exists from the 1860s.
 - A prominent team-colored command label includes the turn number and current Movement or Shooting phase.
@@ -41,9 +42,9 @@
 - During Shooting, artillery and every Mobile Flank may each make one coordinate shot. Turrets and eligible adjacent-attack units may also attack once.
 - Selecting artillery arms unlimited coordinate fire; selecting a Mobile Flank limits the same control to 10 squares; selecting a Turret limits it to 4 squares.
 - Artillery and Mobile Flanks can damage any enemy except Tank Destroyers. Turrets damage Spyglass and Grenade Men; Tanks damage adjacent Turrets and Grenade Men; Tank Destroyers damage adjacent Tanks; Grenade Men are the only units that damage Tank Destroyers.
-- When a team loses its artillery or all of its support units, the turn indicator announces the winner and action controls are disabled until a new map starts.
+- When a team loses its artillery or all of its mobile/support units, the turn indicator announces the winner and action controls are disabled until a new map starts. Static bases and cities do not count as surviving support, while undeployed MVC and MVB units do.
 - A numeric grid-size control regenerates the map at the chosen dimensions.
-- Nine compact shop controls expose all purchasable units and their prices after a friendly base is selected. MVC and MVB each cost `$400`.
+- Nine compact shop controls expose all purchasable units and their prices after a friendly base is selected. The Tank Destroyer control is narrower so MVC and MVB controls fit beside it; MVC and MVB each cost `$400`.
 - Each team receives `ceil(grid size / 10)` cities, and each surviving city adds `$100` at the beginning of its owner's turn.
 - The status line explains selection and invalid moves.
 - `GENERATE NEW BATTLEFIELD` regenerates all unit, mountain, and tree positions.

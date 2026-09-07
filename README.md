@@ -21,12 +21,12 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 - Mobile City Vehicles (MVC) move 4. Select an MVC and click it a second time to deploy it permanently as a city on its current square.
 - Mobile Base Vehicles (MVB) move 4. Select an MVB and click it a second time to deploy it permanently as a new base on its current square.
 - Movable units may travel horizontally, vertically, or diagonally. All units route around occupied friendly and enemy tiles; every unit except Spyglass also routes around mountains. Diagonal steps use their true longer distance, and no unit may finish on another unit.
-- Spyglass units and Motorcycles reveal enemies within 3 squares. An enemy in a tree remains concealed unless a scout is directly adjacent, including diagonally.
+- Spyglass units and Motorcycles reveal enemies within 3 squares. Selecting either scout keeps its nearby coordinate labels visible during both Movement and Shooting. An enemy in a tree remains concealed unless a scout is directly adjacent, including diagonally.
 - Trees do not block movement or firing.
 - Mountains and trees generate as natural-looking connected groups. No connected group contains more than eight matching terrain tiles, including diagonal contact.
 - Select any friendly base during Movement to buy one unit in an adjacent open square. Every base may produce independently once per Movement phase, so deploying more bases increases production. New units wait until the next turn to move, attack, or deploy.
 - Shop prices are Spyglass `$50`, Turret `$50`, Grenade Men `$75`, Tank `$100`, Motorcycle `$150`, Mobile Flank `$300`, Tank Destroyer `$300`, MVC `$400`, and MVB `$400`.
-- A team loses immediately if its artillery is destroyed or every unit other than its artillery is destroyed. The opposing team wins.
+- A team loses immediately if its artillery is destroyed or all of its remaining mobile/support units are destroyed. Bases and cities do not prevent defeat; undeployed MVC and MVB units do. The opposing team wins.
 - Choose a grid size from 6×6 through 100×100, then press **Apply / New Map** to regenerate units, mountains, and trees.
 - Large-board coordinates continue after `Z` (`AA`, `AB`, and so on), reaching `CV100` on a 100×100 grid.
 - A five-second **Opponent's Turn** screen hides the battlefield after **End Turn**, followed by a private command handoff until the next player is ready.

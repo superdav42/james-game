@@ -331,7 +331,7 @@ func _draw() -> void:
 
 	if selected_unit != "" and turn_phase == SHOOTING_PHASE:
 		_draw_target_markers(font)
-	if selected_unit != "" and turn_phase == MOVEMENT_PHASE and _unit_type(selected_unit) in [SPYGLASS, MOTORCYCLE] and _effective_cell_size() >= 24.0:
+	if selected_unit != "" and _unit_type(selected_unit) in [SPYGLASS, MOTORCYCLE] and _effective_cell_size() >= 24.0:
 		_draw_spyglass_coordinates(font)
 	if selected_unit != "" and turn_phase == MOVEMENT_PHASE:
 		_draw_movement_arrows()
@@ -784,6 +784,10 @@ func _select_unit(unit_id: String) -> void:
 			else:
 				selected_artillery = unit_id
 				_set_status("%s armed · Enter any coordinate from %s." % [_display_name(unit_id), _coordinate_range_text()])
+		elif unit_type in [SPYGLASS, MOTORCYCLE]:
+			selected_unit = unit_id
+			spyglass_range_cells = _spyglass_range(unit_id)
+			_set_status("%s has no attack · Scouting coordinates remain visible." % _display_name(unit_id))
 		elif unit_type in [MOBILE_FLANK, TURRET, TANK, TANK_DESTROYER, GRENADE]:
 			if fired_units.has(unit_id):
 				_set_status("%s has already attacked this turn." % _display_name(unit_id), true)
@@ -1279,7 +1283,7 @@ func _check_for_winner(defeated_team: String) -> bool:
 	var artillery_alive := units.has("%s_artillery" % defeated_team)
 	var support_unit_alive := false
 	for unit_id in units:
-		if _unit_team(unit_id) == defeated_team and _unit_type(unit_id) != ARTILLERY:
+		if _unit_team(unit_id) == defeated_team and _unit_type(unit_id) not in [ARTILLERY, BASE, CITY]:
 			support_unit_alive = true
 			break
 	if artillery_alive and support_unit_alive:
@@ -1557,11 +1561,11 @@ func _layout_hud() -> void:
 	make_mobile_flank_button.position = Vector2(left + 404.0, 1108.0)
 	make_mobile_flank_button.size = Vector2(180.0, 42.0)
 	make_tank_destroyer_button.position = Vector2(left + 16.0, 1158.0)
-	make_tank_destroyer_button.size = Vector2(180.0, 46.0)
-	make_mvc_button.position = Vector2(left + 210.0, 1158.0)
-	make_mvc_button.size = Vector2(180.0, 46.0)
-	make_mvb_button.position = Vector2(left + 404.0, 1158.0)
-	make_mvb_button.size = Vector2(180.0, 46.0)
+	make_tank_destroyer_button.size = Vector2(150.0, 46.0)
+	make_mvc_button.position = Vector2(left + 180.0, 1158.0)
+	make_mvc_button.size = Vector2(194.0, 46.0)
+	make_mvb_button.position = Vector2(left + 388.0, 1158.0)
+	make_mvb_button.size = Vector2(196.0, 46.0)
 	$Hud/FooterLabel.position = Vector2(left + 16.0, 1224.0)
 	$Hud/FooterLabel.size = Vector2(568.0, 36.0)
 	_clamp_board_pan()
