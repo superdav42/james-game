@@ -8,7 +8,7 @@
 - Mountains and trees remain visually distinct at a glance. Trees conceal enemy units from distant radar observation but do not block movement or firing.
 - Red and Blue use distinct sprite sets. Compact `A`, `S`, `T`, and `B` badges preserve role recognition when sprites are unfamiliar.
 - Selecting a unit adds a high-contrast white ring, armed artillery receives a cyan ring, detected enemies receive a gold ring, and legal destinations use a green fill and outline.
-- Reachable spyglass squares display coordinates appropriate to the current board size.
+- Every square in a selected spyglass unit's circular range displays its coordinate, including occupied squares; only open squares receive movement highlights and accept movement.
 - Recent targets use animated orange impact markers.
 - A prominent team-colored command label includes the turn number.
 - Opposing units are hidden unless detected by an active-team spyglass.
@@ -19,7 +19,7 @@
 - The main content remains centered when the browser or device viewport grows beyond the 720×1280 design size.
 - Large battlefields can be zoomed up to 1000% and panned by dragging, mouse wheel plus drag, or WASD. `FIT` returns to the full-board view.
 - Primary controls retain at least a 42px touch target, and status text uses plain action-oriented feedback.
-- A full-screen private handoff hides the board between local players until the next commander explicitly begins their turn.
+- After an action, a full-screen `OPPONENT'S TURN` transition hides the board for five seconds before the private handoff lets the next commander begin.
 - Sound can be disabled at any time. Interface, movement, impact, production, error, and victory cues reinforce visible feedback but are never required to play.
 
 ## Interaction

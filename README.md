@@ -10,7 +10,7 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 - Moving a unit, firing artillery, or firing a turret ends the active team's turn.
 - Artillery is stationary and has unlimited range across the current board. Select it, enter a coordinate, and press **Fire**.
 - A direct artillery hit removes an opposing unit; misses leave an impact marker.
-- The spyglass unit moves within a circular 3-space range and can cross or occupy mountains. Its reachable squares display their coordinates.
+- The spyglass unit moves within a circular 3-space range and can cross or occupy mountains. Every square in range displays its coordinate, even when another unit occupies it, but only empty squares are legal destinations.
 - The turret moves within a circular 4-space range and must travel around mountains. Diagonal steps use their true longer distance.
 - Instead of moving, a turret can fire at a typed coordinate within 4 squares. It only damages an opposing spyglass unit.
 - Spyglass units and turrets can move horizontally, vertically, or diagonally.
@@ -21,7 +21,7 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 - A team loses immediately if its artillery is destroyed or every unit other than its artillery is destroyed. The opposing team wins.
 - Choose a grid size from 6×6 through 100×100, then press **Apply / New Map** to regenerate units, mountains, and trees.
 - Large-board coordinates continue after `Z` (`AA`, `AB`, and so on), reaching `CV100` on a 100×100 grid.
-- A private command handoff hides the battlefield between turns until the next player is ready.
+- A five-second **Opponent's Turn** screen hides the battlefield after each action, followed by a private command handoff until the next player is ready.
 - Large battlefields support button or mouse-wheel zoom, drag panning, WASD panning, and one-tap **Fit** reset.
 - Sound cues reinforce selection, movement, firing, invalid orders, production, and victory; **Sound On/Off** makes all audio optional.
 

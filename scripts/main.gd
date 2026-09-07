@@ -4,6 +4,7 @@ const BOARD_SIZE := 600.0
 const BOARD_TOP := 250.0
 const MAX_ZOOM := 10.0
 const PAN_SPEED := 520.0
+const OPPONENT_TURN_DELAY := 5.0
 
 const ARTILLERY := "artillery"
 const SPYGLASS := "spyglass"
@@ -72,12 +73,16 @@ var active_team := RED
 var selected_unit := ""
 var selected_artillery := "red_artillery"
 var valid_moves: Array[Vector2i] = []
+var spyglass_range_cells: Array[Vector2i] = []
 var valid_targets: Array[String] = []
 var unit_serial := 1
 var turn_number := 1
 var game_over := false
 var handoff_pending := true
 var pending_handoff_message := ""
+var transition_active := false
+var transition_countdown := 0.0
+var displayed_countdown_second := 0
 var sound_enabled := true
 var drag_active := false
 var drag_moved := false
@@ -100,6 +105,7 @@ var impact_flash_time := 0.0
 @onready var fit_button: Button = $Hud/FitButton
 @onready var sound_button: Button = $Hud/SoundButton
 @onready var handoff_overlay: ColorRect = $Hud/HandoffOverlay
+@onready var handoff_security_label: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/SecurityLabel
 @onready var handoff_title: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/HandoffTitle
 @onready var handoff_message: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/HandoffMessage
 @onready var begin_turn_button: Button = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/BeginTurnButton
@@ -130,6 +136,15 @@ func _process(delta: float) -> void:
 	if impact_flash_time > 0.0:
 		impact_flash_time = maxf(0.0, impact_flash_time - delta)
 		queue_redraw()
+	if transition_active:
+		transition_countdown = maxf(0.0, transition_countdown - delta)
+		var countdown_second := ceili(transition_countdown)
+		if countdown_second != displayed_countdown_second:
+			displayed_countdown_second = countdown_second
+			_update_transition_message()
+		if transition_countdown <= 0.0:
+			transition_active = false
+			_show_handoff(pending_handoff_message)
 
 	if handoff_pending or game_over or zoom_level <= 1.0 or coordinate_input.has_focus():
 		return
@@ -210,14 +225,6 @@ func _draw() -> void:
 			_draw_cell_texture(MOUNTAIN_TEXTURE, mountain, 0.88)
 
 	var font := ThemeDB.fallback_font
-	if selected_unit != "" and _unit_type(selected_unit) == SPYGLASS and _effective_cell_size() >= 24.0:
-		for cell in valid_moves:
-			if not _is_cell_visible(cell):
-				continue
-			var rect := _cell_rect(cell)
-			var coordinate_font_size := clampi(roundi(rect.size.x * 0.2), 8, 13)
-			draw_string(font, rect.position + Vector2(3.0, coordinate_font_size + 2.0), _cell_to_coordinate(cell), HORIZONTAL_ALIGNMENT_LEFT, -1.0, coordinate_font_size, Color("112819"))
-
 	for impact_cell in impact_cells:
 		if _is_cell_visible(impact_cell):
 			_draw_impact(impact_cell)
@@ -226,6 +233,9 @@ func _draw() -> void:
 		if not _is_unit_visible_to_active_team(unit_id) or not _is_cell_visible(units[unit_id]):
 			continue
 		_draw_unit(unit_id, font)
+
+	if selected_unit != "" and _unit_type(selected_unit) == SPYGLASS and _effective_cell_size() >= 24.0:
+		_draw_spyglass_coordinates(font)
 
 	# Mask overflow from partially visible edge cells before drawing the crisp frame.
 	var viewport_size := get_viewport_rect().size
@@ -293,6 +303,19 @@ func _draw_impact(cell: Vector2i) -> void:
 	draw_line(center + Vector2(radius * 0.7, -radius * 0.7), center + Vector2(-radius * 0.7, radius * 0.7), Color("611d12"), width)
 
 
+func _draw_spyglass_coordinates(font: Font) -> void:
+	for cell in spyglass_range_cells:
+		if not _is_cell_visible(cell):
+			continue
+		var rect := _cell_rect(cell)
+		var coordinate := _cell_to_coordinate(cell)
+		var coordinate_font_size := clampi(roundi(rect.size.x * 0.2), 8, 13)
+		var label_size := font.get_string_size(coordinate, HORIZONTAL_ALIGNMENT_LEFT, -1.0, coordinate_font_size)
+		var label_rect := Rect2(rect.position + Vector2(2.0, 2.0), label_size + Vector2(6.0, 4.0))
+		draw_rect(label_rect, Color(0.03, 0.07, 0.05, 0.78), true)
+		draw_string(font, label_rect.position + Vector2(3.0, coordinate_font_size + 1.0), coordinate, HORIZONTAL_ALIGNMENT_LEFT, -1.0, coordinate_font_size, Color("eaffee"))
+
+
 func _apply_grid_size() -> void:
 	grid_size = int(grid_size_input.value)
 	cell_size = BOARD_SIZE / float(grid_size)
@@ -331,10 +354,12 @@ func _create_new_board() -> void:
 	selected_unit = ""
 	selected_artillery = "red_artillery"
 	valid_moves.clear()
+	spyglass_range_cells.clear()
 	valid_targets.clear()
 	unit_serial = 1
 	turn_number = 1
 	game_over = false
+	transition_active = false
 	coordinate_input.clear()
 	coordinate_input.editable = true
 	fire_button.disabled = false
@@ -386,6 +411,7 @@ func _handle_board_tap(position: Vector2) -> void:
 		var move_message := "%s moved to %s." % [_display_name(selected_unit), _cell_to_coordinate(cell)]
 		selected_unit = ""
 		valid_moves.clear()
+		spyglass_range_cells.clear()
 		valid_targets.clear()
 		_end_turn(move_message)
 	elif selected_unit != "":
@@ -398,6 +424,7 @@ func _select_unit(unit_id: String) -> void:
 		return
 
 	_play_sfx(SELECT_SOUND)
+	spyglass_range_cells.clear()
 	if _unit_type(unit_id) == ARTILLERY:
 		selected_artillery = unit_id
 		selected_unit = ""
@@ -414,7 +441,8 @@ func _select_unit(unit_id: String) -> void:
 		valid_moves = _get_valid_moves(unit_id)
 		valid_targets = _get_turret_targets(unit_id)
 		if _unit_type(unit_id) == SPYGLASS:
-			_set_status("%s · Scout and move up to 3 spaces." % _display_name(unit_id))
+			spyglass_range_cells = _spyglass_range(unit_id)
+			_set_status("%s · Coordinates mark the full range; green squares are open destinations." % _display_name(unit_id))
 		else:
 			_set_status("%s · Move up to 4 spaces, or fire at a coordinate." % _display_name(unit_id))
 	queue_redraw()
@@ -465,13 +493,21 @@ func _produce_unit(unit_type: String) -> void:
 
 func _spyglass_moves(unit_id: String) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
+	for cell in _spyglass_range(unit_id):
+		if _unit_at(cell) == "":
+			result.append(cell)
+	return result
+
+
+func _spyglass_range(unit_id: String) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
 	var start: Vector2i = units[unit_id]
 	for row in range(grid_size):
 		for column in range(grid_size):
 			var cell := Vector2i(column, row)
 			var offset := cell - start
 			var distance_squared: int = offset.x * offset.x + offset.y * offset.y
-			if distance_squared > 0 and distance_squared <= 9 and _unit_at(cell) == "":
+			if distance_squared > 0 and distance_squared <= 9:
 				result.append(cell)
 	return result
 
@@ -572,6 +608,7 @@ func _fire_turret_at_coordinate(target: Vector2i) -> void:
 	coordinate_input.clear()
 	selected_unit = ""
 	valid_moves.clear()
+	spyglass_range_cells.clear()
 	valid_targets.clear()
 	if hit_unit != "" and _unit_type(hit_unit) == SPYGLASS and _check_for_winner(_unit_team(hit_unit)):
 		return
@@ -647,6 +684,7 @@ func _check_for_winner(defeated_team: String) -> bool:
 	selected_unit = ""
 	selected_artillery = ""
 	valid_moves.clear()
+	spyglass_range_cells.clear()
 	valid_targets.clear()
 	coordinate_input.editable = false
 	fire_button.disabled = true
@@ -665,17 +703,38 @@ func _end_turn(action_message: String) -> void:
 	turn_number += 1
 	selected_unit = ""
 	valid_moves.clear()
+	spyglass_range_cells.clear()
 	valid_targets.clear()
 	selected_artillery = "%s_artillery" % active_team if units.has("%s_artillery" % active_team) else ""
 	_set_status("%s %s command is next." % [action_message, active_team.capitalize()])
 	_update_turn_label()
-	_show_handoff(action_message)
+	_start_turn_transition(action_message)
 	queue_redraw()
+
+
+func _start_turn_transition(action_message: String) -> void:
+	handoff_pending = true
+	pending_handoff_message = action_message
+	transition_active = true
+	transition_countdown = OPPONENT_TURN_DELAY
+	displayed_countdown_second = ceili(transition_countdown)
+	handoff_security_label.text = "COMMAND TRANSFER"
+	handoff_title.text = "OPPONENT'S TURN"
+	handoff_title.modulate = GOLD_COLOR
+	begin_turn_button.hide()
+	_update_transition_message()
+	handoff_overlay.show()
+
+
+func _update_transition_message() -> void:
+	handoff_message.text = "%s command will be ready in %d seconds.\nThe battlefield remains hidden." % [active_team.capitalize(), displayed_countdown_second]
 
 
 func _show_handoff(action_message: String) -> void:
 	handoff_pending = true
 	pending_handoff_message = action_message
+	transition_active = false
+	handoff_security_label.text = "PRIVATE COMMAND HANDOFF"
 	handoff_title.text = "%s COMMAND" % active_team.to_upper()
 	handoff_title.modulate = TEAM_COLORS[active_team]
 	if turn_number == 1:
@@ -683,10 +742,13 @@ func _show_handoff(action_message: String) -> void:
 	else:
 		handoff_message.text = "Pass the device to %s.\n\nPrevious action: %s" % [active_team.capitalize(), action_message]
 	begin_turn_button.text = "BEGIN %s TURN" % active_team.to_upper()
+	begin_turn_button.show()
 	handoff_overlay.show()
 
 
 func _begin_turn() -> void:
+	if transition_active:
+		return
 	handoff_pending = false
 	handoff_overlay.hide()
 	_set_status("%s command ready · Select a unit or enter a target coordinate." % active_team.capitalize())
