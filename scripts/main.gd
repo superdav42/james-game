@@ -23,6 +23,8 @@ const TANK := "tank"
 const MOTORCYCLE := "motorcycle"
 const TANK_DESTROYER := "tankdestroyer"
 const GRENADE := "grenade"
+const MVC := "mvc"
+const MVB := "mvb"
 const RED := "red"
 const BLUE := "blue"
 
@@ -47,6 +49,8 @@ const UNIT_LETTERS := {
 	MOTORCYCLE: "M",
 	TANK_DESTROYER: "D",
 	GRENADE: "G",
+	MVC: "C",
+	MVB: "B",
 }
 const UNIT_COSTS := {
 	SPYGLASS: 50,
@@ -56,6 +60,8 @@ const UNIT_COSTS := {
 	MOTORCYCLE: 150,
 	MOBILE_FLANK: 300,
 	TANK_DESTROYER: 300,
+	MVC: 400,
+	MVB: 400,
 }
 
 const GROUND_TEXTURES := [
@@ -77,6 +83,8 @@ const UNIT_TEXTURES := {
 		MOTORCYCLE: preload("res://assets/kenney/tiny_battle/red_motorcycle.png"),
 		TANK_DESTROYER: preload("res://assets/kenney/tiny_battle/red_tank_destroyer.png"),
 		GRENADE: preload("res://assets/kenney/tiny_battle/red_grenade.png"),
+		MVC: preload("res://assets/kenney/tiny_battle/red_mobile_flank.png"),
+		MVB: preload("res://assets/kenney/tiny_battle/red_mobile_flank.png"),
 	},
 	BLUE: {
 		ARTILLERY: preload("res://assets/kenney/tiny_battle/blue_artillery.png"),
@@ -89,6 +97,8 @@ const UNIT_TEXTURES := {
 		MOTORCYCLE: preload("res://assets/kenney/tiny_battle/blue_motorcycle.png"),
 		TANK_DESTROYER: preload("res://assets/kenney/tiny_battle/blue_tank_destroyer.png"),
 		GRENADE: preload("res://assets/kenney/tiny_battle/blue_grenade.png"),
+		MVC: preload("res://assets/kenney/tiny_battle/blue_mobile_flank.png"),
+		MVB: preload("res://assets/kenney/tiny_battle/blue_mobile_flank.png"),
 	},
 }
 
@@ -160,6 +170,8 @@ var cannon_cinematic_time := 0.0
 @onready var make_motorcycle_button: Button = $Hud/MakeMotorcycleButton
 @onready var make_tank_destroyer_button: Button = $Hud/MakeTankDestroyerButton
 @onready var make_grenade_button: Button = $Hud/MakeGrenadeButton
+@onready var make_mvc_button: Button = $Hud/MakeMvcButton
+@onready var make_mvb_button: Button = $Hud/MakeMvbButton
 @onready var zoom_label: Label = $Hud/ZoomLabel
 @onready var zoom_out_button: Button = $Hud/ZoomOutButton
 @onready var zoom_in_button: Button = $Hud/ZoomInButton
@@ -190,6 +202,8 @@ func _ready() -> void:
 	make_motorcycle_button.pressed.connect(_produce_unit.bind(MOTORCYCLE))
 	make_tank_destroyer_button.pressed.connect(_produce_unit.bind(TANK_DESTROYER))
 	make_grenade_button.pressed.connect(_produce_unit.bind(GRENADE))
+	make_mvc_button.pressed.connect(_produce_unit.bind(MVC))
+	make_mvb_button.pressed.connect(_produce_unit.bind(MVB))
 	zoom_out_button.pressed.connect(_change_zoom.bind(0.5))
 	zoom_in_button.pressed.connect(_change_zoom.bind(2.0))
 	fit_button.pressed.connect(_reset_zoom)
@@ -381,6 +395,8 @@ func _draw_unit(unit_id: String, font: Font) -> void:
 		draw_texture_rect(texture, Rect2(sprite_center - sprite_size * 0.5, sprite_size), false)
 		if unit_type == SPYGLASS:
 			_draw_handheld_spyglass(center, rect.size.x, team)
+		elif unit_type in [MVC, MVB]:
+			_draw_builder_emblem(center, rect.size.x, unit_type)
 
 	if rect.size.x >= 34.0:
 		var badge_radius := clampf(rect.size.x * 0.13, 6.0, 11.0)
@@ -490,6 +506,14 @@ func _draw_handheld_spyglass(center: Vector2, size: float, team: String) -> void
 	draw_circle(lens_position, maxf(1.5, size * 0.035), Color("8fe7ff"))
 
 
+func _draw_builder_emblem(center: Vector2, size: float, unit_type: String) -> void:
+	var sign_rect := Rect2(center + Vector2(-size * 0.17, -size * 0.33), Vector2(size * 0.34, size * 0.3))
+	draw_rect(sign_rect, Color("172033"), true)
+	draw_rect(sign_rect, GOLD_COLOR, false, maxf(1.5, size * 0.035))
+	var letter := "C" if unit_type == MVC else "B"
+	draw_string(ThemeDB.fallback_font, sign_rect.position + Vector2(0.0, sign_rect.size.y * 0.78), letter, HORIZONTAL_ALIGNMENT_CENTER, sign_rect.size.x, roundi(size * 0.24), Color.WHITE)
+
+
 func _draw_unit_shadow(center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:
 	var points := PackedVector2Array()
 	for index in range(20):
@@ -581,6 +605,8 @@ func _create_new_board() -> void:
 	make_motorcycle_button.disabled = false
 	make_tank_destroyer_button.disabled = false
 	make_grenade_button.disabled = false
+	make_mvc_button.disabled = false
+	make_mvb_button.disabled = false
 	turn_label.modulate = Color.WHITE
 	_update_phase_controls()
 	_set_status("Movement phase · Select a movable unit, then select an arrow-marked destination.")
@@ -708,6 +734,8 @@ func _handle_board_tap(position: Vector2) -> void:
 	var clicked_unit := _unit_at(cell)
 	if turn_phase == SHOOTING_PHASE and selected_unit != "" and clicked_unit in valid_targets:
 		_attack_selected_target(clicked_unit)
+	elif turn_phase == MOVEMENT_PHASE and clicked_unit == selected_unit and _unit_type(clicked_unit) in [MVC, MVB]:
+		_deploy_mobile_constructor(clicked_unit)
 	elif clicked_unit != "" and _unit_team(clicked_unit) == active_team:
 		_select_unit(clicked_unit)
 	elif turn_phase == MOVEMENT_PHASE and selected_unit != "" and cell in valid_moves:
@@ -728,12 +756,16 @@ func _select_unit(unit_id: String) -> void:
 	if turn_phase == MOVEMENT_PHASE:
 		if unit_type == BASE:
 			selected_unit = unit_id
-			_set_status("%s shop selected · Treasury $%d · One purchase available." % [_display_name(unit_id), gold[active_team]])
+			var availability := "Production spent this turn." if produced_bases.has(unit_id) else "One purchase available."
+			_set_status("%s shop selected · Treasury $%d · %s" % [_display_name(unit_id), gold[active_team], availability])
 		elif unit_type == CITY:
 			selected_unit = unit_id
 			_set_status("%s generates $%d at the start of every turn." % [_display_name(unit_id), CITY_INCOME])
 		elif unit_type == ARTILLERY:
 			_set_status("%s is stationary. It can fire during the shooting phase." % _display_name(unit_id))
+		elif moved_units.has(unit_id) and unit_type in [MVC, MVB] and not fired_units.has(unit_id):
+			selected_unit = unit_id
+			_set_status("%s has moved · Click it again to deploy it here." % _display_name(unit_id))
 		elif moved_units.has(unit_id):
 			_set_status("%s has already moved this turn." % _display_name(unit_id), true)
 		else:
@@ -741,7 +773,10 @@ func _select_unit(unit_id: String) -> void:
 			valid_moves = _get_valid_moves(unit_id)
 			if unit_type in [SPYGLASS, MOTORCYCLE]:
 				spyglass_range_cells = _spyglass_range(unit_id)
-			_set_status("%s selected · Choose an arrow-marked destination to confirm its move." % _display_name(unit_id))
+			if unit_type in [MVC, MVB]:
+				_set_status("%s selected · Choose a destination, or click it again to deploy it here." % _display_name(unit_id))
+			else:
+				_set_status("%s selected · Choose an arrow-marked destination to confirm its move." % _display_name(unit_id))
 	else:
 		if unit_type == ARTILLERY:
 			if fired_units.has(unit_id):
@@ -777,6 +812,32 @@ func _move_selected_unit(destination: Vector2i) -> void:
 	moved_units[unit_id] = true
 	_play_sfx(MOVE_SOUND)
 	_set_status("%s moved to %s. Other units may still move." % [_display_name(unit_id), _cell_to_coordinate(destination)])
+	queue_redraw()
+
+
+func _deploy_mobile_constructor(unit_id: String) -> void:
+	if not units.has(unit_id) or unit_id != selected_unit:
+		return
+	var constructor_type := _unit_type(unit_id)
+	if constructor_type not in [MVC, MVB]:
+		return
+	if moved_units.has(unit_id) and fired_units.has(unit_id):
+		_set_status("%s was purchased this turn and can deploy next turn." % _display_name(unit_id), true)
+		return
+	var team := _unit_team(unit_id)
+	var cell: Vector2i = units[unit_id]
+	var structure_type := CITY if constructor_type == MVC else BASE
+	var structure_id := "%s_%s_%d" % [team, structure_type, unit_serial]
+	unit_serial += 1
+	units.erase(unit_id)
+	moved_units.erase(unit_id)
+	fired_units.erase(unit_id)
+	units[structure_id] = cell
+	_clear_selection()
+	_update_economy_label()
+	_play_sfx(CONFIRM_SOUND)
+	var benefit := "$%d income starting next turn" % CITY_INCOME if structure_type == CITY else "one unit of production per movement phase"
+	_set_status("%s deployed as a %s at %s · %s." % [_display_unit_type(constructor_type), _display_unit_type(structure_type), _cell_to_coordinate(cell), benefit])
 	queue_redraw()
 
 
@@ -857,6 +918,8 @@ func _get_valid_moves(unit_id: String) -> Array[Vector2i]:
 		MOBILE_FLANK: 3.0,
 		TANK_DESTROYER: 3.0,
 		MOTORCYCLE: 10.0,
+		MVC: 4.0,
+		MVB: 4.0,
 	}
 	if movement_ranges.has(unit_type):
 		return _ground_unit_moves(unit_id, movement_ranges[unit_type])
@@ -869,13 +932,10 @@ func _produce_unit(unit_type: String) -> void:
 	if turn_phase != MOVEMENT_PHASE:
 		_set_status("Units can only be purchased during the movement phase.", true)
 		return
-	var base_id := "%s_base" % active_team
-	if not units.has(base_id):
-		_set_status("%s has no base remaining." % active_team.capitalize(), true)
+	if selected_unit == "" or not units.has(selected_unit) or _unit_team(selected_unit) != active_team or _unit_type(selected_unit) != BASE:
+		_set_status("Select one of your bases before producing a unit.", true)
 		return
-	if selected_unit != base_id:
-		_set_status("Select your base before producing a unit.", true)
-		return
+	var base_id := selected_unit
 	if produced_bases.has(base_id):
 		_set_status("This base has already produced a unit this turn.", true)
 		return
@@ -1242,6 +1302,8 @@ func _check_for_winner(defeated_team: String) -> bool:
 	make_motorcycle_button.disabled = true
 	make_tank_destroyer_button.disabled = true
 	make_grenade_button.disabled = true
+	make_mvc_button.disabled = true
+	make_mvb_button.disabled = true
 	phase_button.disabled = true
 	turn_label.text = "%s VICTORY" % winner.to_upper()
 	turn_label.modulate = TEAM_COLORS[winner]
@@ -1341,7 +1403,7 @@ func _update_phase_controls() -> void:
 	phase_button.disabled = game_over or action_in_progress
 	coordinate_input.editable = not is_movement and not game_over
 	fire_button.disabled = is_movement or game_over or action_in_progress
-	for button in [make_spyglass_button, make_turret_button, make_tank_button, make_mobile_flank_button, make_motorcycle_button, make_tank_destroyer_button, make_grenade_button]:
+	for button in [make_spyglass_button, make_turret_button, make_tank_button, make_mobile_flank_button, make_motorcycle_button, make_tank_destroyer_button, make_grenade_button, make_mvc_button, make_mvb_button]:
 		button.disabled = not is_movement or game_over
 
 
@@ -1495,7 +1557,11 @@ func _layout_hud() -> void:
 	make_mobile_flank_button.position = Vector2(left + 404.0, 1108.0)
 	make_mobile_flank_button.size = Vector2(180.0, 42.0)
 	make_tank_destroyer_button.position = Vector2(left + 16.0, 1158.0)
-	make_tank_destroyer_button.size = Vector2(568.0, 46.0)
+	make_tank_destroyer_button.size = Vector2(180.0, 46.0)
+	make_mvc_button.position = Vector2(left + 210.0, 1158.0)
+	make_mvc_button.size = Vector2(180.0, 46.0)
+	make_mvb_button.position = Vector2(left + 404.0, 1158.0)
+	make_mvb_button.size = Vector2(180.0, 46.0)
 	$Hud/FooterLabel.position = Vector2(left + 16.0, 1224.0)
 	$Hud/FooterLabel.size = Vector2(568.0, 36.0)
 	_clamp_board_pan()
@@ -1656,5 +1722,7 @@ func _display_unit_type(unit_type: String) -> String:
 		MOTORCYCLE: "Motorcycle",
 		TANK_DESTROYER: "Tank Destroyer",
 		GRENADE: "Grenade Men",
+		MVC: "Mobile City Vehicle",
+		MVB: "Mobile Base Vehicle",
 	}
 	return names.get(unit_type, unit_type.capitalize())

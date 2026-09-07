@@ -336,12 +336,32 @@ tooltip_text = "Move 3 or fire up to 10 squares"
 [node name="MakeTankDestroyerButton" type="Button" parent="Hud" groups=["action_button"]]
 offset_left = 76.0
 offset_top = 1158.0
+offset_right = 256.0
+offset_bottom = 1204.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "D  TANK DEST.  $300"
+tooltip_text = "Move 3; destroys adjacent tanks; only grenade units can destroy it"
+
+[node name="MakeMvcButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 270.0
+offset_top = 1158.0
+offset_right = 450.0
+offset_bottom = 1204.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "C  MVC  $400"
+tooltip_text = "Move 4; click it again to deploy a city"
+
+[node name="MakeMvbButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 464.0
+offset_top = 1158.0
 offset_right = 644.0
 offset_bottom = 1204.0
 mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 12
-text = "D  TANK DESTROYER  $300"
-tooltip_text = "Move 3; destroys adjacent tanks; only grenade units can destroy it"
+theme_override_font_sizes/font_size = 10
+text = "B  MVB  $400"
+tooltip_text = "Move 4; click it again to deploy a base"
 
 [node name="FooterLabel" type="Label" parent="Hud"]
 offset_left = 76.0

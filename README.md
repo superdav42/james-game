@@ -18,12 +18,14 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 - Motorcycles move 10, scout within 3 squares, display scouting coordinates, and cannot enter or cross mountains.
 - Mobile Flanks move 3 and fire at typed coordinates within 10 squares.
 - Tank Destroyers move 3 and destroy an adjacent Tank. Only Grenade Men can destroy a Tank Destroyer.
+- Mobile City Vehicles (MVC) move 4. Select an MVC and click it a second time to deploy it permanently as a city on its current square.
+- Mobile Base Vehicles (MVB) move 4. Select an MVB and click it a second time to deploy it permanently as a new base on its current square.
 - Movable units may travel horizontally, vertically, or diagonally. All units route around occupied friendly and enemy tiles; every unit except Spyglass also routes around mountains. Diagonal steps use their true longer distance, and no unit may finish on another unit.
 - Spyglass units and Motorcycles reveal enemies within 3 squares. An enemy in a tree remains concealed unless a scout is directly adjacent, including diagonally.
 - Trees do not block movement or firing.
 - Mountains and trees generate as natural-looking connected groups. No connected group contains more than eight matching terrain tiles, including diagonal contact.
-- Select an HQ during Movement to buy one unit per turn in an adjacent open square. New units wait until the next turn to move or attack.
-- Shop prices are Spyglass `$50`, Turret `$50`, Grenade Men `$75`, Tank `$100`, Motorcycle `$150`, Mobile Flank `$300`, and Tank Destroyer `$300`.
+- Select any friendly base during Movement to buy one unit in an adjacent open square. Every base may produce independently once per Movement phase, so deploying more bases increases production. New units wait until the next turn to move, attack, or deploy.
+- Shop prices are Spyglass `$50`, Turret `$50`, Grenade Men `$75`, Tank `$100`, Motorcycle `$150`, Mobile Flank `$300`, Tank Destroyer `$300`, MVC `$400`, and MVB `$400`.
 - A team loses immediately if its artillery is destroyed or every unit other than its artillery is destroyed. The opposing team wins.
 - Choose a grid size from 6×6 through 100×100, then press **Apply / New Map** to regenerate units, mountains, and trees.
 - Large-board coordinates continue after `Z` (`AA`, `AB`, and so on), reaching `CV100` on a 100×100 grid.
@@ -33,7 +35,7 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 
 Only the active team's units can be selected. Artillery, Turrets, and Mobile Flanks cannot fire on friendly units.
 
-The game uses a cohesive pixel-art command interface. Spyglass and Motorcycle use the same soldier silhouette: the Spyglass soldier carries a prominent brass telescope, while the Motorcycle rider sits on a complete two-wheeled vehicle. Compact letter badges keep every role readable at a glance, including `A`, `S`, `T`, `C`, `F`, `K`, `M`, `D`, and `G`.
+The game uses a cohesive pixel-art command interface. Spyglass and Motorcycle use the same soldier silhouette: the Spyglass soldier carries a prominent brass telescope, while the Motorcycle rider sits on a complete two-wheeled vehicle. MVC and MVB units use marked construction vehicles that show their future structure (`C` or `B`). Compact letter badges keep every role readable at a glance.
 
 ## Requirements
 
