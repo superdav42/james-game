@@ -1,63 +1,41 @@
-# James Game
+# Arcane Defense
 
-A polished Godot 4.7 local hot-seat strategy game played on an adjustable artillery grid.
+A portrait-oriented Godot 4.7 tower-defense prototype. Summon a random defender, hold the winding path, and stop the horde from reaching the crystal.
 
-## Current rules
+## Rules
 
-- Red and Blue begin in opposing compact regions with one stationary artillery cannon (`A`), Spyglass (`S`), Turret (`T`), headquarters (`B`), and one city (`C`) per ten board rows, rounded up. The eight tiles immediately surrounding each starting HQ are reserved and begin without units or cities.
-- Each city pays its owner `$100` when that commander begins a turn. The treasury and expected next-turn income remain visible above the board.
-- A turn has a **Movement** phase followed by a **Shooting** phase. Press **Begin Shooting** after movement, then **End Turn** after firing.
-- During Movement, every movable unit may move once. Movement uses a two-click order: select a unit to display destination arrows, then select an arrow-marked tile to confirm. A brisk tile-by-tile animation follows the selected route.
-- During Shooting, stationary artillery may fire once, every Mobile Flank may fire once, and each eligible direct-attack unit may attack once. Firing one unit does not prevent the others from firing.
-- Artillery has unlimited coordinate range. Firing opens a three-second cinematic cutaway built from a clearly labelled realistic Civil War artillery reenactment, with flash, smoke, recoil, and camera movement before the shot resolves.
-- A direct artillery or Mobile Flank hit removes an opposing unit except a Tank Destroyer; misses leave an impact marker.
-- The Spyglass moves within a circular 3-space range and may cross or occupy mountains. It must still route around occupied friendly and enemy tiles. Every square in range displays its coordinate, including occupied squares, but only reachable empty squares are legal destinations.
-- The Turret moves 4 and may fire within 4 squares at opposing Spyglass or Grenade Men units.
-- Grenade Men move 4 and destroy an adjacent Tank Destroyer.
-- Tanks move 3 and destroy an adjacent Turret or Grenade Men unit.
-- Motorcycles move 10, scout within 3 squares, display scouting coordinates, and cannot enter or cross mountains.
-- Mobile Flanks move 3 and fire at typed coordinates within 10 squares.
-- Tank Destroyers move 3 and destroy an adjacent Tank. Only Grenade Men can destroy a Tank Destroyer.
-- Mobile City Vehicles (MVC) move 4. Select an MVC and click it a second time to deploy it permanently as a city on its current square.
-- Mobile Base Vehicles (MVB) move 4. Select an MVB and click it a second time to deploy it permanently as a new base on its current square.
-- Movable units may travel horizontally, vertically, or diagonally. All units route around occupied friendly and enemy tiles; every unit except Spyglass also routes around mountains. Diagonal steps use their true longer distance, and no unit may finish on another unit.
-- Spyglass units and Motorcycles reveal enemies within 3 squares. Selecting either scout keeps its nearby coordinate labels visible during both Movement and Shooting. An enemy in a tree remains concealed unless a scout is directly adjacent, including diagonally.
-- Trees do not block movement or firing.
-- Mountains and trees generate as natural-looking connected groups. No connected group contains more than eight matching terrain tiles, including diagonal contact.
-- Select any friendly base during Movement to buy one unit in an adjacent open square. Every base may produce independently once per Movement phase, so deploying more bases increases production. New units wait until the next turn to move, attack, or deploy.
-- Shop prices are Spyglass `$50`, Turret `$50`, Grenade Men `$75`, Tank `$100`, Motorcycle `$150`, Mobile Flank `$300`, Tank Destroyer `$300`, MVC `$400`, and MVB `$400`.
-- A team loses immediately if its artillery is destroyed or all of its remaining mobile/support units are destroyed. Bases and cities do not prevent defeat; undeployed MVC and MVB units do. The opposing team wins.
-- Choose a grid size from 6×6 through 100×100, then press **Apply / New Map** to regenerate units, mountains, and trees.
-- Large-board coordinates continue after `Z` (`AA`, `AB`, and so on), reaching `CV100` on a 100×100 grid.
-- A five-second **Opponent's Turn** screen hides the battlefield after **End Turn**, followed by a private command handoff until the next player is ready.
-- Large battlefields support button or mouse-wheel zoom, drag panning, WASD panning, and one-tap **Fit** reset.
-- Sound cues reinforce selection, movement, firing, invalid orders, production, and victory; **Sound On/Off** makes all audio optional.
-
-Only the active team's units can be selected. Artillery, Turrets, and Mobile Flanks cannot fire on friendly units.
-
-The game uses a cohesive pixel-art command interface. Spyglass and Motorcycle use the same soldier silhouette: the Spyglass soldier carries a prominent brass telescope, while the Motorcycle rider sits on a complete two-wheeled vehicle. MVC and MVB units use marked construction vehicles that show their future structure (`C` or `B`). Compact letter badges keep every role readable at a glance.
-
-## Requirements
-
-- Godot 4.7.x
+- You begin with **20 mana**, gain **2 mana every second**, and can hold up to 99.
+- The battlefield has exactly **20 tower tiles**, arranged inside a path that winds around each row of tiles.
+- Press **Summon** to spend **5 mana** and place a random Electric Mage, Ice Mage, Fire Mage, Archer, or Reaper on the next open tile.
+- Every enemy begins with **100 HP** and continuously advances toward the crystal.
+- Electric, Ice, and Fire Mages deal **20 damage** per attack.
+- The **Electric Mage** chains lightning through as many as two nearby extra enemies.
+- The **Ice Mage** slows its target for 2.5 seconds.
+- The **Fire Mage** burns its target for damage over time.
+- The **Archer** deals **25 damage**, five more than each mage.
+- **The Reaper** throws scythes for **20 damage** and has a **5% chance to defeat its target in one strike**.
+- Press **Merge Matching** to combine the first two towers with the same type and level. The merged tower gains a level, deals 75% more damage per added level, attacks slightly faster, and frees one tile.
+- Each escaped enemy removes one of the crystal's 10 health points. The run ends when crystal health reaches zero.
+- Enemy movement and spawn frequency gradually increase during a run.
 
 ## Run locally
 
-Run: `godot --path .`
+Requires Godot 4.7.x.
 
-Headless smoke check: `godot --headless --path . --quit-after 1`
+```text
+godot --path .
+```
 
-Web export: `godot --headless --path . --export-release Web build/index.html`
+Headless smoke check:
 
-Pushes to `main` build and deploy the web export through `.github/workflows/pages.yml`.
+```text
+godot --headless --path . --quit-after 2
+```
 
 ## Project layout
 
-- `project.godot`: mobile-oriented project settings.
-- `export_presets.cfg`: reproducible web export configuration.
-- `.github/workflows/pages.yml`: GitHub Pages build and deployment workflow.
-- `scenes/main.tscn`: main board and interface scene.
-- `scripts/main.gd`: board generation, rendering, selection, and movement rules.
-- `assets/kenney/`: selected CC0 battlefield graphics, sound effects, and original license files.
-- `THIRD_PARTY_ASSETS.md`: asset provenance and license summary.
-- `docs/mobile-notes.md`: next steps for Android/iOS export setup.
+- `project.godot`: portrait mobile project settings.
+- `scenes/main.tscn`: heads-up display and game scene.
+- `scripts/main.gd`: mana, summoning, enemies, combat effects, and drawing.
+- `DESIGN.md`: visual direction and interaction rules.
+- `docs/mobile-notes.md`: Android/iOS export notes.
