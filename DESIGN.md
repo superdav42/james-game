@@ -8,6 +8,7 @@
 - Mountains and trees remain visually distinct at a glance. Trees conceal enemy units from distant radar observation but do not block movement or firing.
 - Mountains and trees grow from weighted neighboring cells into separated clusters of at most eight matching tiles, counting diagonal contact. This creates natural formations without producing impassable map-spanning terrain.
 - Red and Blue use distinct sprite sets. Compact role badges preserve recognition across all ten unit and structure types.
+- Spyglass and Motorcycle deliberately share one team-colored soldier silhouette. A large handheld brass telescope identifies the standing Spyglass role; a complete frame, engine, seat, fork, handlebars, and two spoked wheels identify the mounted Motorcycle role.
 - Selecting a unit adds a high-contrast white ring, armed artillery receives a cyan ring, detected enemies receive a gold ring, and legal destinations use a green fill and outline.
 - Every square in a selected spyglass unit's circular range displays its coordinate, including occupied squares; only open squares receive movement highlights and accept movement.
 - Recent targets use animated orange impact markers. Cannon shots add recoil and a muzzle flash before resolving.

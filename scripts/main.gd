@@ -68,7 +68,7 @@ const TREE_TEXTURE := preload("res://assets/kenney/tiny_battle/trees.png")
 const UNIT_TEXTURES := {
 	RED: {
 		ARTILLERY: preload("res://assets/kenney/tiny_battle/red_artillery.png"),
-		SPYGLASS: preload("res://assets/kenney/tiny_battle/red_spyglass.png"),
+		SPYGLASS: preload("res://assets/kenney/tiny_battle/red_motorcycle.png"),
 		TURRET: preload("res://assets/kenney/tiny_battle/red_turret.png"),
 		BASE: preload("res://assets/kenney/tiny_battle/red_base.png"),
 		CITY: preload("res://assets/kenney/tiny_battle/red_city.png"),
@@ -80,7 +80,7 @@ const UNIT_TEXTURES := {
 	},
 	BLUE: {
 		ARTILLERY: preload("res://assets/kenney/tiny_battle/blue_artillery.png"),
-		SPYGLASS: preload("res://assets/kenney/tiny_battle/blue_spyglass.png"),
+		SPYGLASS: preload("res://assets/kenney/tiny_battle/blue_motorcycle.png"),
 		TURRET: preload("res://assets/kenney/tiny_battle/blue_turret.png"),
 		BASE: preload("res://assets/kenney/tiny_battle/blue_base.png"),
 		CITY: preload("res://assets/kenney/tiny_battle/blue_city.png"),
@@ -365,14 +365,22 @@ func _draw_unit(unit_id: String, font: Font) -> void:
 	if unit_type == ARTILLERY:
 		_draw_civil_war_cannon(center, rect.size.x, team)
 	else:
+		var sprite_center := center
+		var sprite_scale := 0.8
 		if unit_type == MOTORCYCLE:
-			_draw_motorcycle_wheels(center, rect.size.x)
+			_draw_motorcycle(center, rect.size.x, team)
+			sprite_center += Vector2(0.0, -rect.size.y * 0.12)
+			sprite_scale = 0.58
+		elif unit_type == SPYGLASS:
+			sprite_scale = 0.68
 		var team_textures: Dictionary = UNIT_TEXTURES[team]
 		var texture: Texture2D = team_textures[unit_type]
-		var sprite_size := rect.size * 0.8
+		var sprite_size := rect.size * sprite_scale
 		if unit_id == movement_animation_unit:
 			sprite_size.y *= 1.0 + sin(movement_animation_progress * PI * 2.0) * 0.06
-		draw_texture_rect(texture, Rect2(center - sprite_size * 0.5, sprite_size), false)
+		draw_texture_rect(texture, Rect2(sprite_center - sprite_size * 0.5, sprite_size), false)
+		if unit_type == SPYGLASS:
+			_draw_handheld_spyglass(center, rect.size.x, team)
 
 	if rect.size.x >= 34.0:
 		var badge_radius := clampf(rect.size.x * 0.13, 6.0, 11.0)
@@ -444,12 +452,42 @@ func _draw_muzzle_flash(center: Vector2, direction: Vector2, size: float) -> voi
 	draw_circle(center, size * 0.075, Color("fff4b0"))
 
 
-func _draw_motorcycle_wheels(center: Vector2, size: float) -> void:
-	var wheel_y := center.y + size * 0.22
-	var wheel_radius := size * 0.1
-	for wheel_x in [center.x - size * 0.2, center.x + size * 0.2]:
-		draw_circle(Vector2(wheel_x, wheel_y), wheel_radius, Color("20242d"))
-		draw_circle(Vector2(wheel_x, wheel_y), wheel_radius * 0.45, Color("aab6c8"))
+func _draw_motorcycle(center: Vector2, size: float, team: String) -> void:
+	var wheel_y := center.y + size * 0.24
+	var wheel_radius := size * 0.145
+	var rear_wheel := Vector2(center.x - size * 0.25, wheel_y)
+	var front_wheel := Vector2(center.x + size * 0.27, wheel_y)
+	for wheel_center in [rear_wheel, front_wheel]:
+		draw_circle(wheel_center, wheel_radius, Color("161a22"))
+		draw_circle(wheel_center, wheel_radius * 0.68, Color("697386"), false, maxf(1.5, size * 0.035))
+		draw_circle(wheel_center, wheel_radius * 0.16, Color("d5d9e0"))
+		for spoke_index in range(6):
+			var spoke_direction := Vector2.from_angle(TAU * float(spoke_index) / 6.0)
+			draw_line(wheel_center, wheel_center + spoke_direction * wheel_radius * 0.58, Color("697386"), maxf(1.0, size * 0.018))
+	var frame_color: Color = TEAM_COLORS[team].lightened(0.08)
+	var engine_center := center + Vector2(0.0, size * 0.09)
+	draw_line(rear_wheel, engine_center, frame_color, maxf(2.0, size * 0.055))
+	draw_line(engine_center, front_wheel, frame_color, maxf(2.0, size * 0.055))
+	draw_line(rear_wheel, center + Vector2(-size * 0.04, -size * 0.08), frame_color, maxf(2.0, size * 0.05))
+	draw_line(center + Vector2(-size * 0.04, -size * 0.08), front_wheel, frame_color, maxf(2.0, size * 0.05))
+	draw_rect(Rect2(engine_center - Vector2(size * 0.09, size * 0.065), Vector2(size * 0.18, size * 0.13)), Color("353c48"), true)
+	draw_line(center + Vector2(-size * 0.16, -size * 0.11), center + Vector2(size * 0.02, -size * 0.11), Color("242933"), maxf(3.0, size * 0.075))
+	var handle_base := front_wheel + Vector2(-size * 0.03, -size * 0.27)
+	var handle_end := handle_base + Vector2(size * 0.13, -size * 0.07)
+	draw_line(front_wheel, handle_base, Color("596273"), maxf(1.5, size * 0.035))
+	draw_line(handle_base, handle_end, Color("596273"), maxf(1.5, size * 0.035))
+
+
+func _draw_handheld_spyglass(center: Vector2, size: float, team: String) -> void:
+	var eye_position := center + Vector2(size * 0.08, -size * 0.18)
+	var lens_position := center + Vector2(size * 0.35, -size * 0.31)
+	var direction := (lens_position - eye_position).normalized()
+	var perpendicular := Vector2(-direction.y, direction.x)
+	draw_line(center + Vector2(size * 0.02, size * 0.02), eye_position + direction * size * 0.08, TEAM_COLORS[team].lightened(0.18), maxf(2.0, size * 0.065))
+	draw_line(eye_position, lens_position, Color("b9812d"), maxf(3.0, size * 0.09))
+	draw_line(eye_position + direction * size * 0.05, lens_position - direction * size * 0.05, Color("e4b84f"), maxf(1.0, size * 0.028))
+	draw_line(lens_position - perpendicular * size * 0.075, lens_position + perpendicular * size * 0.075, Color("f2c65d"), maxf(2.0, size * 0.045))
+	draw_circle(lens_position, maxf(1.5, size * 0.035), Color("8fe7ff"))
 
 
 func _draw_unit_shadow(center: Vector2, radius_x: float, radius_y: float, color: Color) -> void:

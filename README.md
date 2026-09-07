@@ -33,7 +33,7 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 
 Only the active team's units can be selected. Artillery, Turrets, and Mobile Flanks cannot fire on friendly units.
 
-The game uses a cohesive pixel-art command interface. Compact letter badges keep every role readable at a glance, including `A`, `S`, `T`, `C`, `F`, `K`, `M`, `D`, and `G`.
+The game uses a cohesive pixel-art command interface. Spyglass and Motorcycle use the same soldier silhouette: the Spyglass soldier carries a prominent brass telescope, while the Motorcycle rider sits on a complete two-wheeled vehicle. Compact letter badges keep every role readable at a glance, including `A`, `S`, `T`, `C`, `F`, `K`, `M`, `D`, and `G`.
 
 ## Requirements
 
