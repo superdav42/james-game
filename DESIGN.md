@@ -6,13 +6,15 @@
 - Kenney's CC0 Tiny Battle pixel art provides cohesive grass, mountain, tree, headquarters, city, scout, vehicle, and infantry graphics. Stationary artillery uses a procedural silver Civil War cannon with wooden wheels.
 - Ground details vary deterministically so the battlefield feels natural without obscuring the tactical grid.
 - Mountains and trees remain visually distinct at a glance. Trees conceal enemy units from distant radar observation but do not block movement or firing.
+- Mountains and trees grow from weighted neighboring cells into separated clusters of at most eight matching tiles, counting diagonal contact. This creates natural formations without producing impassable map-spanning terrain.
 - Red and Blue use distinct sprite sets. Compact role badges preserve recognition across all ten unit and structure types.
 - Selecting a unit adds a high-contrast white ring, armed artillery receives a cyan ring, detected enemies receive a gold ring, and legal destinations use a green fill and outline.
 - Every square in a selected spyglass unit's circular range displays its coordinate, including occupied squares; only open squares receive movement highlights and accept movement.
 - Recent targets use animated orange impact markers. Cannon shots add recoil and a muzzle flash before resolving.
+- Stationary artillery fire temporarily replaces the command view with a three-second cinematic reenactment image. A warm discharge flash, slow image push, subtle camera vibration, smoke-filled frame, countdown, and explicit `HISTORICAL REENACTMENT` label provide realistic spectacle without implying archival footage exists from the 1860s.
 - A prominent team-colored command label includes the turn number and current Movement or Shooting phase.
 - Opposing units are hidden unless detected by an active-team Spyglass or Motorcycle, or exposed as a legal direct-attack target.
-- Teams deploy as opposing compact clusters so their headquarters, artillery, initial support units, and scaled city allocations form coherent starting positions.
+- Teams deploy in opposing compact regions, but all eight cells around both starting headquarters remain free of initial units and cities. This preserves room around each strategic structure while retaining coherent team placement.
 
 ## Interface
 
@@ -30,6 +32,7 @@
 - Movement uses an explicit two-click order: select a unit, then select an arrow-marked destination. This avoids accidental moves and works consistently with mouse or touch input.
 - Taps select or move; dragging pans only when zoomed, preventing accidental orders while inspecting large maps.
 - Movement highlights use circular distance: diagonal movement costs more than horizontal or vertical movement without increasing maximum range.
+- Occupied cells block path traversal for every unit. Mountains block every unit except Spyglass; Spyglass may cross or occupy mountains but cannot pass through friendly or enemy units.
 - Units animate tile by tile along the chosen legal route at a brisk, readable speed.
 - During Movement, each movable unit may move once and each HQ may produce once. Newly produced units cannot act until the next turn.
 - During Shooting, artillery and every Mobile Flank may each make one coordinate shot. Turrets and eligible adjacent-attack units may also attack once.

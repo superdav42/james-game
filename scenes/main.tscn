@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3 uid="uid://danielmain00001"]
+[gd_scene load_steps=7 format=3 uid="uid://danielmain00001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
+[ext_resource type="Texture2D" path="res://assets/generated/civil_war_cannon_fire.png" id="2_cannon_cinematic"]
 
 [sub_resource type="StyleBoxFlat" id="StyleTopPanel"]
 bg_color = Color(0.0823529, 0.113725, 0.188235, 0.97)
@@ -415,6 +416,78 @@ layout_mode = 2
 mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 18
 text = "BEGIN RED TURN"
+
+[node name="CannonCinematicOverlay" type="ColorRect" parent="Hud"]
+visible = false
+z_index = 20
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.00392157, 0.00784314, 0.0156863, 0.98)
+
+[node name="TitleLabel" type="Label" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 182.0
+offset_bottom = 232.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.956863, 0.788235, 0.364706, 1)
+theme_override_font_sizes/font_size = 27
+text = "FIELD ARTILLERY · FIRING"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CannonImage" type="TextureRect" parent="Hud/CannonCinematicOverlay"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -330.0
+offset_top = -220.0
+offset_right = 330.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_cannon_cinematic")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Flash" type="ColorRect" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0.835294, 0.501961, 0)
+
+[node name="CountdownLabel" type="Label" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 882.0
+offset_bottom = 944.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.905882, 0.929412, 0.960784, 1)
+theme_override_font_sizes/font_size = 20
+text = "SHOT IN FLIGHT · 3.0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ReenactmentLabel" type="Label" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 950.0
+offset_bottom = 986.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 13
+text = "HISTORICAL REENACTMENT"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="SfxPlayer" type="AudioStreamPlayer" parent="."]
 volume_db = -5.0

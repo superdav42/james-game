@@ -4,23 +4,24 @@ A polished Godot 4.7 local hot-seat strategy game played on an adjustable artill
 
 ## Current rules
 
-- Red and Blue begin in opposing compact clusters with one stationary artillery cannon (`A`), Spyglass (`S`), Turret (`T`), headquarters (`B`), and one city (`C`) per ten board rows, rounded up.
+- Red and Blue begin in opposing compact regions with one stationary artillery cannon (`A`), Spyglass (`S`), Turret (`T`), headquarters (`B`), and one city (`C`) per ten board rows, rounded up. The eight tiles immediately surrounding each starting HQ are reserved and begin without units or cities.
 - Each city pays its owner `$100` when that commander begins a turn. The treasury and expected next-turn income remain visible above the board.
 - A turn has a **Movement** phase followed by a **Shooting** phase. Press **Begin Shooting** after movement, then **End Turn** after firing.
 - During Movement, every movable unit may move once. Movement uses a two-click order: select a unit to display destination arrows, then select an arrow-marked tile to confirm. A brisk tile-by-tile animation follows the selected route.
 - During Shooting, stationary artillery may fire once, every Mobile Flank may fire once, and each eligible direct-attack unit may attack once. Firing one unit does not prevent the others from firing.
-- Artillery has unlimited coordinate range. Its Civil War-style silver cannon recoils and flashes before the shot resolves.
+- Artillery has unlimited coordinate range. Firing opens a three-second cinematic cutaway built from a clearly labelled realistic Civil War artillery reenactment, with flash, smoke, recoil, and camera movement before the shot resolves.
 - A direct artillery or Mobile Flank hit removes an opposing unit except a Tank Destroyer; misses leave an impact marker.
-- The Spyglass moves within a circular 3-space range and may cross or occupy mountains. Every square in range displays its coordinate, including occupied squares, but only empty squares are legal destinations.
+- The Spyglass moves within a circular 3-space range and may cross or occupy mountains. It must still route around occupied friendly and enemy tiles. Every square in range displays its coordinate, including occupied squares, but only reachable empty squares are legal destinations.
 - The Turret moves 4 and may fire within 4 squares at opposing Spyglass or Grenade Men units.
 - Grenade Men move 4 and destroy an adjacent Tank Destroyer.
 - Tanks move 3 and destroy an adjacent Turret or Grenade Men unit.
 - Motorcycles move 10, scout within 3 squares, display scouting coordinates, and cannot enter or cross mountains.
 - Mobile Flanks move 3 and fire at typed coordinates within 10 squares.
 - Tank Destroyers move 3 and destroy an adjacent Tank. Only Grenade Men can destroy a Tank Destroyer.
-- Movable units may travel horizontally, vertically, or diagonally. Ground units route around mountains, diagonal steps use their true longer distance, and no unit may finish on another unit.
+- Movable units may travel horizontally, vertically, or diagonally. All units route around occupied friendly and enemy tiles; every unit except Spyglass also routes around mountains. Diagonal steps use their true longer distance, and no unit may finish on another unit.
 - Spyglass units and Motorcycles reveal enemies within 3 squares. An enemy in a tree remains concealed unless a scout is directly adjacent, including diagonally.
 - Trees do not block movement or firing.
+- Mountains and trees generate as natural-looking connected groups. No connected group contains more than eight matching terrain tiles, including diagonal contact.
 - Select an HQ during Movement to buy one unit per turn in an adjacent open square. New units wait until the next turn to move or attack.
 - Shop prices are Spyglass `$50`, Turret `$50`, Grenade Men `$75`, Tank `$100`, Motorcycle `$150`, Mobile Flank `$300`, and Tank Destroyer `$300`.
 - A team loses immediately if its artillery is destroyed or every unit other than its artillery is destroyed. The opposing team wins.

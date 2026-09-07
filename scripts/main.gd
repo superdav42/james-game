@@ -6,6 +6,7 @@ const MAX_ZOOM := 10.0
 const PAN_SPEED := 520.0
 const OPPONENT_TURN_DELAY := 5.0
 const CANNON_ANIMATION_DURATION := 0.7
+const CANNON_CINEMATIC_DURATION := 3.0
 const MOVE_STEP_DURATION := 0.16
 const CITY_INCOME := 100
 
@@ -141,6 +142,7 @@ var movement_animation_unit := ""
 var movement_animation_from := Vector2i.ZERO
 var movement_animation_to := Vector2i.ZERO
 var movement_animation_progress := 0.0
+var cannon_cinematic_time := 0.0
 
 @onready var background: ColorRect = $Background
 @onready var turn_label: Label = $Hud/TurnLabel
@@ -168,6 +170,10 @@ var movement_animation_progress := 0.0
 @onready var handoff_title: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/HandoffTitle
 @onready var handoff_message: Label = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/HandoffMessage
 @onready var begin_turn_button: Button = $Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent/BeginTurnButton
+@onready var cannon_cinematic_overlay: ColorRect = $Hud/CannonCinematicOverlay
+@onready var cannon_cinematic_image: TextureRect = $Hud/CannonCinematicOverlay/CannonImage
+@onready var cannon_cinematic_flash: ColorRect = $Hud/CannonCinematicOverlay/Flash
+@onready var cannon_cinematic_countdown: Label = $Hud/CannonCinematicOverlay/CountdownLabel
 @onready var sfx_player: AudioStreamPlayer = $SfxPlayer
 @onready var jingle_player: AudioStreamPlayer = $JinglePlayer
 
@@ -204,6 +210,13 @@ func _process(delta: float) -> void:
 	if cannon_animation_time > 0.0:
 		cannon_animation_time = maxf(0.0, cannon_animation_time - delta)
 		queue_redraw()
+	if cannon_cinematic_time > 0.0:
+		cannon_cinematic_time = maxf(0.0, cannon_cinematic_time - delta)
+		var cinematic_progress := 1.0 - cannon_cinematic_time / CANNON_CINEMATIC_DURATION
+		cannon_cinematic_image.scale = Vector2.ONE * (1.0 + cinematic_progress * 0.035)
+		cannon_cinematic_image.rotation = sin(cinematic_progress * TAU * 7.0) * (1.0 - cinematic_progress) * 0.006
+		cannon_cinematic_flash.color.a = maxf(0.0, 0.72 - cinematic_progress * 4.5)
+		cannon_cinematic_countdown.text = "SHOT IN FLIGHT · %.1f" % cannon_cinematic_time
 	if transition_active:
 		transition_countdown = maxf(0.0, transition_countdown - delta)
 		var countdown_second := ceili(transition_countdown)
@@ -472,6 +485,8 @@ func _draw_spyglass_coordinates(font: Font) -> void:
 
 
 func _apply_grid_size() -> void:
+	if action_in_progress or handoff_pending:
+		return
 	grid_size = int(grid_size_input.value)
 	cell_size = BOARD_SIZE / float(grid_size)
 	_reset_zoom()
@@ -486,20 +501,21 @@ func _create_new_board() -> void:
 	cells.shuffle()
 
 	units.clear()
-	var red_anchor := Vector2i(randi_range(0, maxi(1, grid_size / 3)), randi_range(0, grid_size - 1))
+	var red_anchor := Vector2i(randi_range(0, maxi(1, grid_size / 4)), randi_range(0, grid_size - 1))
 	var blue_anchor := Vector2i(grid_size - 1 - red_anchor.x, grid_size - 1 - red_anchor.y)
 	var city_count := ceili(float(grid_size) / 10.0)
-	_spawn_team_cluster(RED, red_anchor, city_count, cells)
-	_spawn_team_cluster(BLUE, blue_anchor, city_count, cells)
+	var red_base_cell := _take_cluster_cell(red_anchor, cells)
+	var blue_base_cell := _take_cluster_cell(blue_anchor, cells)
+	units["%s_base" % RED] = red_base_cell
+	units["%s_base" % BLUE] = blue_base_cell
+	var base_cells: Array[Vector2i] = [red_base_cell, blue_base_cell]
+	_spawn_team_cluster(RED, red_anchor, base_cells, city_count, cells)
+	_spawn_team_cluster(BLUE, blue_anchor, base_cells, city_count, cells)
 	cells.shuffle()
-	mountains.clear()
 	var mountain_count := mini(500, maxi(5, roundi(grid_size * grid_size * 0.14)))
-	for index in range(mountain_count):
-		mountains.append(cells.pop_back())
-	trees.clear()
+	mountains = _take_terrain_clusters(mountain_count, cells)
 	var tree_count := mini(400, maxi(4, roundi(grid_size * grid_size * 0.1)))
-	for index in range(tree_count):
-		trees.append(cells.pop_back())
+	trees = _take_terrain_clusters(tree_count, cells)
 
 	impact_cells.clear()
 	active_team = RED
@@ -536,13 +552,12 @@ func _create_new_board() -> void:
 	queue_redraw()
 
 
-func _spawn_team_cluster(team: String, anchor: Vector2i, city_count: int, available_cells: Array[Vector2i]) -> void:
-	units["%s_base" % team] = _take_cluster_cell(anchor, available_cells)
-	units["%s_artillery" % team] = _take_cluster_cell(anchor, available_cells)
-	units["%s_spyglass" % team] = _take_cluster_cell(anchor, available_cells)
-	units["%s_turret" % team] = _take_cluster_cell(anchor, available_cells)
+func _spawn_team_cluster(team: String, anchor: Vector2i, base_cells: Array[Vector2i], city_count: int, available_cells: Array[Vector2i]) -> void:
+	units["%s_artillery" % team] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
+	units["%s_spyglass" % team] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
+	units["%s_turret" % team] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
 	for city_index in range(city_count):
-		units["%s_city_%d" % [team, city_index + 1]] = _take_cluster_cell(anchor, available_cells)
+		units["%s_city_%d" % [team, city_index + 1]] = _take_cluster_cell_outside_bases(anchor, base_cells, available_cells)
 
 
 func _take_cluster_cell(anchor: Vector2i, available_cells: Array[Vector2i]) -> Vector2i:
@@ -555,6 +570,73 @@ func _take_cluster_cell(anchor: Vector2i, available_cells: Array[Vector2i]) -> V
 			best_distance = distance
 			best_index = index
 	return available_cells.pop_at(best_index)
+
+
+func _take_cluster_cell_outside_bases(anchor: Vector2i, base_cells: Array[Vector2i], available_cells: Array[Vector2i]) -> Vector2i:
+	var best_index := -1
+	var best_distance := 1 << 30
+	for index in range(available_cells.size()):
+		var candidate: Vector2i = available_cells[index]
+		var inside_base_perimeter := false
+		for base_cell in base_cells:
+			var base_offset := candidate - base_cell
+			if maxi(absi(base_offset.x), absi(base_offset.y)) <= 1:
+				inside_base_perimeter = true
+				break
+		if inside_base_perimeter:
+			continue
+		var anchor_offset := candidate - anchor
+		var distance := anchor_offset.x * anchor_offset.x + anchor_offset.y * anchor_offset.y
+		if distance < best_distance:
+			best_distance = distance
+			best_index = index
+	if best_index >= 0:
+		return available_cells.pop_at(best_index)
+	return _take_cluster_cell(anchor, available_cells)
+
+
+func _take_terrain_clusters(requested_count: int, available_cells: Array[Vector2i]) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	var blocked_cells: Dictionary[Vector2i, bool] = {}
+	var available_lookup: Dictionary[Vector2i, bool] = {}
+	for cell in available_cells:
+		available_lookup[cell] = true
+	while result.size() < requested_count:
+		var seed_candidates: Array[Vector2i] = []
+		for cell in available_cells:
+			if available_lookup.has(cell) and not blocked_cells.has(cell):
+				seed_candidates.append(cell)
+		if seed_candidates.is_empty():
+			break
+		var seed: Vector2i = seed_candidates.pick_random()
+		available_lookup.erase(seed)
+		var cluster: Array[Vector2i] = [seed]
+		var remaining := requested_count - result.size()
+		var desired_cluster_size := mini(remaining, randi_range(3, 8))
+		while cluster.size() < desired_cluster_size:
+			var growth_candidates: Array[Vector2i] = []
+			for cluster_cell in cluster:
+				for row_offset in range(-1, 2):
+					for column_offset in range(-1, 2):
+						if row_offset == 0 and column_offset == 0:
+							continue
+						var candidate := cluster_cell + Vector2i(column_offset, row_offset)
+						if available_lookup.has(candidate) and candidate not in growth_candidates and not blocked_cells.has(candidate):
+							growth_candidates.append(candidate)
+			if growth_candidates.is_empty():
+				break
+			var next_cell: Vector2i = growth_candidates.pick_random()
+			available_lookup.erase(next_cell)
+			cluster.append(next_cell)
+		result.append_array(cluster)
+		for cluster_cell in cluster:
+			for row_offset in range(-1, 2):
+				for column_offset in range(-1, 2):
+					blocked_cells[cluster_cell + Vector2i(column_offset, row_offset)] = true
+	available_cells.clear()
+	for cell in available_lookup:
+		available_cells.append(cell)
+	return result
 
 
 func _begin_board_drag(position: Vector2) -> void:
@@ -684,23 +766,10 @@ func _set_movement_animation_progress(progress: float) -> void:
 
 
 func _movement_path(unit_id: String, destination: Vector2i) -> Array[Vector2i]:
-	if _unit_type(unit_id) == SPYGLASS:
-		return _straight_line_path(units[unit_id], destination)
-	return _ground_unit_path(unit_id, destination)
+	return _unit_path(unit_id, destination, _unit_type(unit_id) == SPYGLASS)
 
 
-func _straight_line_path(start: Vector2i, destination: Vector2i) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	var steps := maxi(absi(destination.x - start.x), absi(destination.y - start.y))
-	for step in range(1, steps + 1):
-		var progress := float(step) / float(steps)
-		var cell := Vector2i(roundi(lerpf(start.x, destination.x, progress)), roundi(lerpf(start.y, destination.y, progress)))
-		if cell not in result:
-			result.append(cell)
-	return result
-
-
-func _ground_unit_path(unit_id: String, destination: Vector2i) -> Array[Vector2i]:
+func _unit_path(unit_id: String, destination: Vector2i, allow_mountains: bool) -> Array[Vector2i]:
 	var start: Vector2i = units[unit_id]
 	var frontier: Array[Vector2i] = [start]
 	var distances: Dictionary[Vector2i, float] = {start: 0.0}
@@ -720,7 +789,7 @@ func _ground_unit_path(unit_id: String, destination: Vector2i) -> Array[Vector2i
 			break
 		for direction in directions:
 			var next_cell: Vector2i = current + direction
-			if not _is_inside_grid(next_cell) or next_cell in mountains or _unit_at(next_cell) != "":
+			if not _is_inside_grid(next_cell) or (next_cell in mountains and not allow_mountains) or _unit_at(next_cell) != "":
 				continue
 			var next_distance: float = distances[current] + (sqrt(2.0) if direction.x != 0 and direction.y != 0 else 1.0)
 			if distances.has(next_cell) and distances[next_cell] <= next_distance:
@@ -809,11 +878,7 @@ func _produce_unit(unit_type: String) -> void:
 
 
 func _spyglass_moves(unit_id: String) -> Array[Vector2i]:
-	var result: Array[Vector2i] = []
-	for cell in _spyglass_range(unit_id):
-		if _unit_at(cell) == "":
-			result.append(cell)
-	return result
+	return _pathfinding_moves(unit_id, 3.0, true)
 
 
 func _spyglass_range(unit_id: String) -> Array[Vector2i]:
@@ -830,6 +895,10 @@ func _spyglass_range(unit_id: String) -> Array[Vector2i]:
 
 
 func _ground_unit_moves(unit_id: String, maximum_distance: float) -> Array[Vector2i]:
+	return _pathfinding_moves(unit_id, maximum_distance, false)
+
+
+func _pathfinding_moves(unit_id: String, maximum_distance: float, allow_mountains: bool) -> Array[Vector2i]:
 	var result: Array[Vector2i] = []
 	var start: Vector2i = units[unit_id]
 	var frontier: Array[Vector2i] = [start]
@@ -851,7 +920,7 @@ func _ground_unit_moves(unit_id: String, maximum_distance: float) -> Array[Vecto
 			var next_cell: Vector2i = current + direction
 			if not _is_inside_grid(next_cell):
 				continue
-			if next_cell in mountains or _unit_at(next_cell) != "":
+			if (next_cell in mountains and not allow_mountains) or _unit_at(next_cell) != "":
 				continue
 			var step_cost := sqrt(2.0) if direction.x != 0 and direction.y != 0 else 1.0
 			var next_distance: float = distance + step_cost
@@ -1053,18 +1122,42 @@ func _fire_mobile_flank_at_coordinate(target: Vector2i) -> void:
 
 func _animate_cannon_shot(attacker_id: String, target: Vector2i) -> void:
 	action_in_progress = true
+	get_viewport().gui_release_focus()
 	fire_button.disabled = true
+	phase_button.disabled = true
+	reset_button.disabled = true
+	grid_size_input.editable = false
+	zoom_out_button.disabled = true
+	zoom_in_button.disabled = true
+	fit_button.disabled = true
+	sound_button.disabled = true
+	coordinate_input.editable = false
 	cannon_animation_unit = attacker_id
 	var offset := Vector2(target - units[attacker_id])
 	cannon_direction = offset.normalized() if offset != Vector2.ZERO else Vector2.RIGHT
 	cannon_animation_time = CANNON_ANIMATION_DURATION
+	cannon_cinematic_time = CANNON_CINEMATIC_DURATION
+	cannon_cinematic_image.scale = Vector2.ONE
+	cannon_cinematic_image.rotation = 0.0
+	cannon_cinematic_image.pivot_offset = cannon_cinematic_image.size * 0.5
+	cannon_cinematic_flash.color.a = 0.72
+	cannon_cinematic_countdown.text = "SHOT IN FLIGHT · 3.0"
+	cannon_cinematic_overlay.show()
 	queue_redraw()
-	await get_tree().create_timer(CANNON_ANIMATION_DURATION).timeout
+	await get_tree().create_timer(CANNON_CINEMATIC_DURATION).timeout
+	cannon_cinematic_overlay.hide()
+	cannon_cinematic_time = 0.0
 	cannon_animation_time = 0.0
 	cannon_animation_unit = ""
 	action_in_progress = false
+	reset_button.disabled = false
+	grid_size_input.editable = true
+	zoom_out_button.disabled = false
+	zoom_in_button.disabled = false
+	fit_button.disabled = false
+	sound_button.disabled = false
 	if not game_over:
-		fire_button.disabled = false
+		_update_phase_controls()
 	queue_redraw()
 
 
