@@ -1,159 +1,516 @@
-[gd_scene load_steps=4 format=3 uid="uid://danielmain00001"]
+[gd_scene load_steps=7 format=3 uid="uid://danielmain00001"]
 
-[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main_script"]
+[ext_resource type="Texture2D" path="res://assets/generated/civil_war_cannon_fire.png" id="2_cannon_cinematic"]
 
-[sub_resource type="StyleBoxFlat" id="PanelStyle"]
-bg_color = Color(0.0392157, 0.117647, 0.152941, 0.96)
+[sub_resource type="StyleBoxFlat" id="StyleTopPanel"]
+bg_color = Color(0.0823529, 0.113725, 0.188235, 0.97)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
-border_color = Color(0.176471, 0.411765, 0.45098, 1)
-corner_radius_top_left = 18
-corner_radius_top_right = 18
-corner_radius_bottom_right = 18
-corner_radius_bottom_left = 18
-
-[sub_resource type="StyleBoxFlat" id="ButtonStyle"]
-bg_color = Color(0.0784314, 0.721569, 0.65098, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.964706, 0.898039, 1)
+border_color = Color(0.180392, 0.239216, 0.356863, 1)
 corner_radius_top_left = 16
 corner_radius_top_right = 16
 corner_radius_bottom_right = 16
 corner_radius_bottom_left = 16
 
+[sub_resource type="StyleBoxFlat" id="StyleInsetPanel"]
+bg_color = Color(0.0431373, 0.0666667, 0.117647, 0.95)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.207843, 0.278431, 0.415686, 1)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[sub_resource type="StyleBoxFlat" id="StyleBoardFrame"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.180392, 0.286275, 0.415686, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleHandoffCard"]
+bg_color = Color(0.0705882, 0.101961, 0.176471, 1)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.956863, 0.788235, 0.364706, 1)
+corner_radius_top_left = 20
+corner_radius_top_right = 20
+corner_radius_bottom_right = 20
+corner_radius_bottom_left = 20
+
 [node name="Main" type="Node2D"]
-script = ExtResource("1_main")
+script = ExtResource("1_main_script")
+
+[node name="Background" type="ColorRect" parent="."]
+z_index = -10
+offset_right = 720.0
+offset_bottom = 1280.0
+mouse_filter = 2
+color = Color(0.0470588, 0.0666667, 0.12549, 1)
 
 [node name="Hud" type="CanvasLayer" parent="."]
 
 [node name="TopPanel" type="Panel" parent="Hud"]
-offset_left = 18.0
+offset_left = 60.0
 offset_top = 16.0
-offset_right = 702.0
-offset_bottom = 140.0
+offset_right = 660.0
+offset_bottom = 230.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("PanelStyle")
+theme_override_styles/panel = SubResource("StyleTopPanel")
 
 [node name="TitleLabel" type="Label" parent="Hud"]
-offset_left = 40.0
-offset_top = 27.0
-offset_right = 680.0
-offset_bottom = 65.0
-theme_override_colors/font_color = Color(0.6, 0.964706, 0.898039, 1)
-theme_override_font_sizes/font_size = 27
-text = "ARCANE DEFENSE"
+offset_left = 80.0
+offset_top = 28.0
+offset_right = 640.0
+offset_bottom = 70.0
+theme_override_colors/font_color = Color(0.956863, 0.788235, 0.364706, 1)
+theme_override_font_sizes/font_size = 32
+text = "JAMES' ARTILLERY GRID"
 horizontal_alignment = 1
 
-[node name="ManaLabel" type="Label" parent="Hud"]
-offset_left = 42.0
-offset_top = 77.0
-offset_right = 304.0
-offset_bottom = 108.0
-theme_override_colors/font_color = Color(0.490196, 0.827451, 0.968627, 1)
-theme_override_font_sizes/font_size = 17
-text = "MANA  20 / 99   +2/sec"
-
-[node name="BaseLabel" type="Label" parent="Hud"]
-offset_left = 310.0
-offset_top = 77.0
-offset_right = 500.0
-offset_bottom = 108.0
-theme_override_colors/font_color = Color(0.368627, 0.917647, 0.831373, 1)
-theme_override_font_sizes/font_size = 17
-text = "CRYSTAL  10 / 10"
+[node name="SubtitleLabel" type="Label" parent="Hud"]
+offset_left = 80.0
+offset_top = 70.0
+offset_right = 640.0
+offset_bottom = 92.0
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 13
+text = "FIELD COMMAND  •  LOCAL HOT-SEAT"
 horizontal_alignment = 1
 
-[node name="KillsLabel" type="Label" parent="Hud"]
-offset_left = 510.0
-offset_top = 77.0
-offset_right = 678.0
-offset_bottom = 108.0
-theme_override_colors/font_color = Color(0.992157, 0.647059, 0.596078, 1)
-theme_override_font_sizes/font_size = 17
-text = "DEFEATED  0"
-horizontal_alignment = 2
+[node name="TurnLabel" type="Label" parent="Hud"]
+offset_left = 80.0
+offset_top = 99.0
+offset_right = 640.0
+offset_bottom = 131.0
+theme_override_font_sizes/font_size = 22
+text = "RED COMMAND  ·  TURN 1"
+horizontal_alignment = 1
+
+[node name="LegendLabel" type="Label" parent="Hud"]
+offset_left = 80.0
+offset_top = 134.0
+offset_right = 640.0
+offset_bottom = 158.0
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 13
+text = "A CANNON   S SCOUT   T TURRET   C CITY   •   SELECT HQ TO SHOP"
+horizontal_alignment = 1
+
+[node name="StatusPanel" type="Panel" parent="Hud"]
+offset_left = 72.0
+offset_top = 166.0
+offset_right = 648.0
+offset_bottom = 220.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleInsetPanel")
 
 [node name="StatusLabel" type="Label" parent="Hud"]
-offset_left = 40.0
-offset_top = 112.0
-offset_right = 680.0
-offset_bottom = 136.0
-theme_override_colors/font_color = Color(0.886275, 0.960784, 0.956863, 1)
-theme_override_font_sizes/font_size = 14
-text = "Summon defenders before the horde arrives!"
+offset_left = 86.0
+offset_top = 172.0
+offset_right = 634.0
+offset_bottom = 214.0
+theme_override_colors/font_color = Color(0.905882, 0.929412, 0.960784, 1)
+theme_override_font_sizes/font_size = 16
+text = "Red artillery armed. Select a unit or enter a target coordinate."
 horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
-[node name="BottomPanel" type="Panel" parent="Hud"]
-offset_left = 18.0
-offset_top = 1092.0
-offset_right = 702.0
-offset_bottom = 1260.0
+[node name="BoardFrame" type="Panel" parent="Hud"]
+offset_left = 54.0
+offset_top = 244.0
+offset_right = 666.0
+offset_bottom = 856.0
 mouse_filter = 2
-theme_override_styles/panel = SubResource("PanelStyle")
+theme_override_styles/panel = SubResource("StyleBoardFrame")
 
-[node name="RosterLabel" type="Label" parent="Hud"]
-offset_left = 40.0
-offset_top = 1106.0
-offset_right = 680.0
-offset_bottom = 1158.0
-theme_override_colors/font_color = Color(0.741176, 0.796078, 0.8, 1)
+[node name="SoundButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 72.0
+offset_top = 262.0
+offset_right = 176.0
+offset_bottom = 304.0
+mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
-text = "E ELECTRIC · CHAIN   I ICE · SLOW   F FIRE · BURN   A ARCHER · 25   R REAPER · 5% KO\nMAGES + REAPER DEAL 20 DAMAGE  •  ENEMIES START WITH 100 HP"
+text = "SOUND ON"
+tooltip_text = "Toggle sound effects"
+
+[node name="FitButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 414.0
+offset_top = 262.0
+offset_right = 482.0
+offset_bottom = 304.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "FIT"
+tooltip_text = "Fit the whole battlefield"
+
+[node name="ZoomOutButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 490.0
+offset_top = 262.0
+offset_right = 534.0
+offset_bottom = 304.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 20
+text = "−"
+tooltip_text = "Zoom out"
+
+[node name="ZoomLabel" type="Label" parent="Hud"]
+offset_left = 538.0
+offset_top = 262.0
+offset_right = 608.0
+offset_bottom = 304.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.905882, 0.929412, 0.960784, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleInsetPanel")
+text = "100%"
 horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="SummonButton" type="Button" parent="Hud"]
-offset_left = 42.0
-offset_top = 1170.0
-offset_right = 406.0
-offset_bottom = 1242.0
+[node name="ZoomInButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 612.0
+offset_top = 262.0
+offset_right = 648.0
+offset_bottom = 304.0
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.0196078, 0.101961, 0.12549, 1)
-theme_override_colors/font_hover_color = Color(0.0196078, 0.101961, 0.12549, 1)
-theme_override_font_sizes/font_size = 23
-theme_override_styles/normal = SubResource("ButtonStyle")
-theme_override_styles/hover = SubResource("ButtonStyle")
-text = "SUMMON  •  5 MANA"
+theme_override_font_sizes/font_size = 20
+text = "+"
+tooltip_text = "Zoom in"
 
-[node name="MergeButton" type="Button" parent="Hud"]
-offset_left = 420.0
-offset_top = 1170.0
-offset_right = 678.0
-offset_bottom = 1242.0
+[node name="InstructionsLabel" type="Label" parent="Hud"]
+offset_left = 76.0
+offset_top = 864.0
+offset_right = 420.0
+offset_bottom = 910.0
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 14
+text = "Select a unit, then an arrow tile\nDrag or WASD to pan when zoomed"
+horizontal_alignment = 0
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="PhaseButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 430.0
+offset_top = 864.0
+offset_right = 644.0
+offset_bottom = 910.0
 mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 17
-text = "MERGE MATCHING"
+theme_override_font_sizes/font_size = 13
+text = "BEGIN SHOOTING"
+tooltip_text = "Advance to the next phase"
 
-[node name="RestartButton" type="Button" parent="Hud"]
-offset_left = 568.0
-offset_top = 26.0
-offset_right = 682.0
-offset_bottom = 65.0
+[node name="ControlPanel" type="Panel" parent="Hud"]
+offset_left = 60.0
+offset_top = 918.0
+offset_right = 660.0
+offset_bottom = 1218.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleTopPanel")
+
+[node name="CoordinateInput" type="LineEdit" parent="Hud"]
+offset_left = 76.0
+offset_top = 934.0
+offset_right = 426.0
+offset_bottom = 988.0
+theme_override_font_sizes/font_size = 20
+placeholder_text = "TARGET COORDINATE  (E7)"
+alignment = 1
+max_length = 5
+virtual_keyboard_type = 1
+
+[node name="FireButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 440.0
+offset_top = 934.0
+offset_right = 644.0
+offset_bottom = 988.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 18
+text = "FIRE SALVO"
+tooltip_text = "Fire the selected artillery, turret, or Mobile Flank"
+
+[node name="GridSizeLabel" type="Label" parent="Hud"]
+offset_left = 76.0
+offset_top = 1000.0
+offset_right = 184.0
+offset_bottom = 1052.0
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 14
+text = "GRID SIZE"
+vertical_alignment = 1
+
+[node name="GridSizeInput" type="SpinBox" parent="Hud"]
+offset_left = 188.0
+offset_top = 1000.0
+offset_right = 290.0
+offset_bottom = 1052.0
+theme_override_font_sizes/font_size = 18
+min_value = 6.0
+max_value = 100.0
+value = 10.0
+allow_greater = false
+allow_lesser = false
+
+[node name="ResetButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 304.0
+offset_top = 1000.0
+offset_right = 644.0
+offset_bottom = 1052.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 15
+text = "GENERATE NEW BATTLEFIELD"
+
+[node name="MakeSpyglassButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 76.0
+offset_top = 1058.0
+offset_right = 256.0
+offset_bottom = 1100.0
 mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 12
-text = "RESTART"
+text = "S  SPYGLASS  $50"
+tooltip_text = "Select your HQ first"
 
-[node name="GameOverPanel" type="Panel" parent="Hud"]
-visible = false
-offset_left = 90.0
-offset_top = 455.0
-offset_right = 630.0
-offset_bottom = 730.0
-theme_override_styles/panel = SubResource("PanelStyle")
+[node name="MakeTurretButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 270.0
+offset_top = 1058.0
+offset_right = 450.0
+offset_bottom = 1100.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "T  TURRET  $50"
+tooltip_text = "Select your HQ first"
 
-[node name="GameOverLabel" type="Label" parent="Hud/GameOverPanel"]
-layout_mode = 1
+[node name="MakeGrenadeButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 464.0
+offset_top = 1058.0
+offset_right = 644.0
+offset_bottom = 1100.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "G  GRENADES  $75"
+tooltip_text = "Move 4; destroys adjacent tank destroyers"
+
+[node name="MakeTankButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 76.0
+offset_top = 1108.0
+offset_right = 256.0
+offset_bottom = 1150.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 12
+text = "K  TANK  $100"
+tooltip_text = "Move 3; destroys adjacent turrets and grenade units"
+
+[node name="MakeMotorcycleButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 270.0
+offset_top = 1108.0
+offset_right = 450.0
+offset_bottom = 1150.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 11
+text = "M  MOTORCYCLE  $150"
+tooltip_text = "Move 10 and scout; cannot enter mountains"
+
+[node name="MakeMobileFlankButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 464.0
+offset_top = 1108.0
+offset_right = 644.0
+offset_bottom = 1150.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "F  MOBILE FLANK  $300"
+tooltip_text = "Move 3 or fire up to 10 squares"
+
+[node name="MakeTankDestroyerButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 76.0
+offset_top = 1158.0
+offset_right = 226.0
+offset_bottom = 1204.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "D  TANK DEST.  $300"
+tooltip_text = "Move 3; destroys adjacent tanks; only grenade units can destroy it"
+
+[node name="MakeMvcButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 240.0
+offset_top = 1158.0
+offset_right = 434.0
+offset_bottom = 1204.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "C  MVC  $400"
+tooltip_text = "Move 4; click it again to deploy a city"
+
+[node name="MakeMvbButton" type="Button" parent="Hud" groups=["action_button"]]
+offset_left = 448.0
+offset_top = 1158.0
+offset_right = 644.0
+offset_bottom = 1204.0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 10
+text = "B  MVB  $400"
+tooltip_text = "Move 4; click it again to deploy a base"
+
+[node name="FooterLabel" type="Label" parent="Hud"]
+offset_left = 76.0
+offset_top = 1224.0
+offset_right = 644.0
+offset_bottom = 1260.0
+theme_override_colors/font_color = Color(0.419608, 0.47451, 0.568627, 1)
+theme_override_font_sizes/font_size = 12
+text = "CITIES PAY $100/TURN  •  CC0 ART + AUDIO BY KENNEY"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HandoffOverlay" type="ColorRect" parent="Hud"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_colors/font_color = Color(0.992157, 0.647059, 0.596078, 1)
-theme_override_font_sizes/font_size = 28
-text = "THE CRYSTAL FELL"
+color = Color(0.0156863, 0.0235294, 0.0470588, 1)
+
+[node name="HandoffCard" type="PanelContainer" parent="Hud/HandoffOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -270.0
+offset_top = -175.0
+offset_right = 270.0
+offset_bottom = 175.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleHandoffCard")
+
+[node name="HandoffMargin" type="MarginContainer" parent="Hud/HandoffOverlay/HandoffCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 32
+
+[node name="HandoffContent" type="VBoxContainer" parent="Hud/HandoffOverlay/HandoffCard/HandoffMargin"]
+layout_mode = 2
+theme_override_constants/separation = 18
+alignment = 1
+
+[node name="SecurityLabel" type="Label" parent="Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 13
+text = "PRIVATE COMMAND HANDOFF"
+horizontal_alignment = 1
+
+[node name="HandoffTitle" type="Label" parent="Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "RED COMMAND"
+horizontal_alignment = 1
+
+[node name="HandoffMessage" type="Label" parent="Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.905882, 0.929412, 0.960784, 1)
+theme_override_font_sizes/font_size = 16
+text = "Pass the device to Red.\nThe battlefield stays hidden until they are ready."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BeginTurnButton" type="Button" parent="Hud/HandoffOverlay/HandoffCard/HandoffMargin/HandoffContent" groups=["action_button"]]
+custom_minimum_size = Vector2(0, 62)
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 18
+text = "BEGIN RED TURN"
+
+[node name="CannonCinematicOverlay" type="ColorRect" parent="Hud"]
+visible = false
+z_index = 20
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.00392157, 0.00784314, 0.0156863, 0.98)
+
+[node name="TitleLabel" type="Label" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 182.0
+offset_bottom = 232.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.956863, 0.788235, 0.364706, 1)
+theme_override_font_sizes/font_size = 27
+text = "FIELD ARTILLERY · FIRING"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="CannonImage" type="TextureRect" parent="Hud/CannonCinematicOverlay"]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -330.0
+offset_top = -220.0
+offset_right = 330.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("2_cannon_cinematic")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="Flash" type="ColorRect" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(1, 0.835294, 0.501961, 0)
+
+[node name="CountdownLabel" type="Label" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 882.0
+offset_bottom = 944.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.905882, 0.929412, 0.960784, 1)
+theme_override_font_sizes/font_size = 20
+text = "SHOT IN FLIGHT · 3.0"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ReenactmentLabel" type="Label" parent="Hud/CannonCinematicOverlay"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 950.0
+offset_bottom = 986.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0.666667, 0.713726, 0.784314, 1)
+theme_override_font_sizes/font_size = 13
+text = "HISTORICAL REENACTMENT"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SfxPlayer" type="AudioStreamPlayer" parent="."]
+volume_db = -5.0
+
+[node name="JinglePlayer" type="AudioStreamPlayer" parent="."]
+volume_db = -7.0
